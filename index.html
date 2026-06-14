@@ -1425,6 +1425,1348 @@ function StaffTab({ staff, onUpdate }) {
 
 
 
+
+
+// ─── Colour & Design Tokens ───────────────────────────────────────────────
+// Palette: Deep saffron (#D4500A) as primary, forest green (#1A6B3A) as
+// secondary, ivory (#FDF8F0) background, slate-navy (#1C2A40) for text.
+// Malayalam-friendly font pairing: Noto Sans Malayalam + Inter.
+// Signature element: glowing "OM" watermark in district header.
+
+const LOGO_BASE64 = "data:image/png;base64,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";
+
+const COLORS = {
+  primary: "#D4500A",
+  primaryDark: "#A83D08",
+  secondary: "#1A6B3A",
+  accent: "#F5A623",
+  bg: "#FDF8F0",
+  card: "#FFFFFF",
+  navBg: "#1C2A40",
+  text: "#1C2A40",
+  textMuted: "#6B7280",
+  border: "#E5E0D8",
+  success: "#16A34A",
+  danger: "#DC2626",
+  warning: "#D97706",
+};
+
+// ─── Initial Data ─────────────────────────────────────────────────────────
+// Kollam District Taluks (official 6 taluks)
+const KOLLAM_TALUKS = ["Kollam", "Kottarakkara", "Karunagappally", "Kunnathur", "Punalur", "Pathanapuram"];
+
+// Kollam District Local Bodies
+const KOLLAM_LOCAL_BODIES = {
+  "Grama Panchayat": [
+    "Adichanalloor","Alappad","Alayamon","Anchal","Ariencavu","Chadayamangalam",
+    "Chathannoor","Chavara","Chirakkara","Chithara","Clappana","East Kallada",
+    "Edamulakkal","Elamadu","Elampalloor","Ezhukone","Ittiva","Kadakkal",
+    "Kalluvathukkal","Karavaloor","Kareepra","Kottamkara","Kulakkada",
+    "Kulasekharapuram","Kulathoopuzha","Kummil","Kundara","Kunnathoor",
+    "Mayyanad","Melila","Munroethuruthu","Mylom","Mynagappally","Nedumpana",
+    "Neduvathoor","Neendakara","Nilamel","Oachira","Panayam","Panmana",
+    "Pathanapuram","Pattazhi","Pattazhi Vadakkekara","Pavithreswaram","Perayam",
+    "Perinad","Piravanthoor","Poothakkulam","Pooyappally","Poruvazhy",
+    "Sasthamcotta","Sooranad North","Sooranad South","Thalavoor","Thazhava",
+    "Thekkumbhagom","Thenmala","Thevalakkara","Thodiyoor","Thrikkaruva",
+    "Thrikkovilvattom","Ummannoor","Velinalloor","Veliyam","Vettikkavala",
+    "Vilakkudy","West Kallada","Yeroor"
+  ],
+  "Municipality": ["Karunagappally","Kottarakkara","Paravur","Punalur"],
+  "Corporation": ["Kollam Corporation"],
+};
+
+const DEFAULT_SUBJECTS = [
+  "Malayalam","English","Hindi","Sanskrit","EVS","IT","Maths","Yoga",
+  "Sharirik","Music","Naithikam","GK","Physics","Biology","Chemistry",
+  "Kalolsavam","Preacher","Talent Search Exam","Shishu Vatika","NIOS","Sasthrolsavam"
+];
+
+const SAMITHI_ROLES = ["President","Vice President","Secretary","Joint Secretary","Treasurer","Samithi Member"];
+
+const INITIAL_SCHOOLS = [
+  { id: 1, code: "BVN001", name: "PUTHIYAKAVU CENTRAL SCHOOL", localBodyType: "Grama Panchayat", localBody: "Neendakara", taluk: "Kollam", level: "LP + UP + HS", phone: "", email: "", udise: "", estYear: "1985", headmaster: "Rajesh Kumar P", hm_mobile: "", building: "", place: "Puthiyakavu", po: "Puthiyakavu", village: "Puthiyakavu", district: "Kollam", pin: "691302", logo: null },
+  { id: 2, code: "BVN002", name: "VYASA VIDYAMANDIR", localBodyType: "Corporation", localBody: "Kollam Corporation", taluk: "Kollam", level: "UP + HS", phone: "", email: "", udise: "", estYear: "1990", headmaster: "Sreedharan Nair K", hm_mobile: "", building: "", place: "Kollam", po: "Kollam", village: "Kollam", district: "Kollam", pin: "691001", logo: null },
+  { id: 3, code: "BVN003", name: "SREE SANKARA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Alappad", taluk: "Karunagappally", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1992", headmaster: "Meena Devi S", hm_mobile: "", building: "", place: "Valathungal", po: "Valathungal", village: "Valathungal", district: "Kollam", pin: "690503", logo: null },
+  { id: 4, code: "BVN004", name: "SREERAMA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Kalluvathukkal", taluk: "Kunnathur", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1988", headmaster: "Suresh Babu T", hm_mobile: "", building: "", place: "Kalluvathukkal", po: "Kalluvathukkal", village: "Kalluvathukkal", district: "Kollam", pin: "690520", logo: null },
+  { id: 5, code: "BVN005", name: "SREEHARI VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Anchal", taluk: "Punalur", level: "LP", phone: "", email: "", udise: "", estYear: "1995", headmaster: "Vijayalakshmi R", hm_mobile: "", building: "", place: "Puthur", po: "Puthur", village: "Puthur", district: "Kollam", pin: "691302", logo: null },
+  { id: 6, code: "BVN006", name: "SARASWATHY VIDYA NIKETHAN (NORTH)", localBodyType: "Grama Panchayat", localBody: "Panmana", taluk: "Karunagappally", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1993", headmaster: "Padmavathy K", hm_mobile: "", building: "", place: "Thrikkunnapuzha North", po: "Thrikkunnapuzha", village: "Thrikkunnapuzha", district: "Kollam", pin: "690520", logo: null },
+  { id: 7, code: "BVN007", name: "SARASWATHY VIDYA NIKETHAN (VAKKANAD)", localBodyType: "Grama Panchayat", localBody: "Pathanapuram", taluk: "Pathanapuram", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1997", headmaster: "Krishnan Nair P", hm_mobile: "", building: "", place: "Vakkanad", po: "Vakkanad", village: "Vakkanad", district: "Kollam", pin: "691523", logo: null },
+  { id: 8, code: "BVN008", name: "SREE SANKARA VIDYAPEEDOM", localBodyType: "Municipality", localBody: "Kottarakkara", taluk: "Kottarakkara", level: "UP + HS", phone: "", email: "", udise: "", estYear: "1986", headmaster: "Devadas M", hm_mobile: "", building: "", place: "Pattazhy", po: "Pattazhy", village: "Pattazhy", district: "Kollam", pin: "691308", logo: null },
+  { id: 9, code: "BVN009", name: "VEDHA VYASA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Kottamkara", taluk: "Kottarakkara", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1999", headmaster: "Sarada Devi N", hm_mobile: "", building: "", place: "Bhoothakulam", po: "Bhoothakulam", village: "Bhoothakulam", district: "Kollam", pin: "691302", logo: null },
+];
+
+const CLASSES = ["Play Class","LKG","UKG","Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10"];
+
+const makeStudentStrength = () => CLASSES.reduce((a,c) => ({ ...a, [c]: { boys: 0, girls: 0 } }), {});
+const makeCommunity = () => ({ SC: 0, ST: 0, OBC: 0, OEC: 0, General: 0 });
+const makeAdmissions = () => CLASSES.reduce((a,c) => ({ ...a, [c]: { boys: 0, girls: 0 } }), {});
+const makeStaff = () => ({ maleteachers: 0, femaleteachers: 0, trained: 0, untrained: 0, officestaff: 0, ayah: 0, librarian: 0, accountant: 0, otherstaff: 0 });
+
+const makeSchoolData = (id) => ({
+  schoolId: id,
+  academicYear: "2026-27",
+  strength: makeStudentStrength(),
+  community: makeCommunity(),
+  admissions: makeAdmissions(),
+  staff: makeStaff(),
+  prevYearTotal: 0,
+  prevYearNewAdmissions: 0,
+  teachers: [],
+  samithi: [],
+  status: "draft",
+  submittedAt: null,
+  lockedAt: null,
+});
+
+const INITIAL_SCHOOL_DATA = INITIAL_SCHOOLS.reduce((a, s) => {
+  a[s.id] = makeSchoolData(s.id);
+  return a;
+}, {});
+
+// ─── Auth Config ──────────────────────────────────────────────────────────
+const USERS = [
+  { id: "admin", username: "admin", password: "admin123", role: "admin", name: "District Administrator" },
+  ...INITIAL_SCHOOLS.map((s, i) => ({
+    id: `school_${s.id}`,
+    username: `bvn${String(i + 1).padStart(3, "0")}`,
+    password: "school123",
+    role: "school",
+    schoolId: s.id,
+    name: s.name,
+  })),
+];
+
+// ─── Utility functions ────────────────────────────────────────────────────
+const sumStrength = (strength) => {
+  let boys = 0, girls = 0;
+  CLASSES.forEach(c => { boys += Number(strength[c]?.boys || 0); girls += Number(strength[c]?.girls || 0); });
+  return { boys, girls, total: boys + girls };
+};
+
+const fmtNum = (n) => Number(n).toLocaleString("en-IN");
+
+// ─── Styles ───────────────────────────────────────────────────────────────
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Noto Sans Malayalam', sans-serif; background: ${COLORS.bg}; color: ${COLORS.text}; min-height: 100vh; }
+  
+  /* ── Layout ── */
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; background: ${COLORS.navBg}; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+  .sidebar.open { width: 260px; }
+  .sidebar.collapsed { width: 64px; }
+  .main-content { flex: 1; margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.3s; }
+  .main-content.full { margin-left: 64px; }
+  
+  /* ── Sidebar ── */
+  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo { width: 40px; height: 40px; background: ${COLORS.primary}; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; font-weight: 700; flex-shrink: 0; }
+  .sidebar-brand { overflow: hidden; }
+  .sidebar-brand h2 { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .sidebar-brand p { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .sidebar-nav { flex: 1; padding: 12px 0; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; font-size: 14px; white-space: nowrap; overflow: hidden; }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-item.active { background: rgba(212,80,10,0.15); border-left-color: ${COLORS.primary}; color: #fff; }
+  .nav-icon { width: 20px; flex-shrink: 0; text-align: center; font-size: 16px; }
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .user-chip { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: ${COLORS.primary}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .user-info { overflow: hidden; }
+  .user-info .name { font-size: 13px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-info .role { font-size: 11px; color: rgba(255,255,255,0.45); }
+  
+  /* ── Topbar ── */
+  .topbar { background: #fff; border-bottom: 1px solid ${COLORS.border}; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-size: 18px; font-weight: 700; color: ${COLORS.text}; flex: 1; }
+  .topbar-badge { background: ${COLORS.primary}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+  .btn-icon { width: 36px; height: 36px; border-radius: 8px; border: 1px solid ${COLORS.border}; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+  .btn-icon:hover { background: ${COLORS.bg}; border-color: ${COLORS.primary}; }
+  
+  /* ── Page ── */
+  .page { padding: 28px 28px 48px; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 24px; font-weight: 700; color: ${COLORS.text}; }
+  .page-header p { color: ${COLORS.textMuted}; margin-top: 4px; font-size: 14px; }
+  
+  /* ── Cards ── */
+  .card { background: ${COLORS.card}; border: 1px solid ${COLORS.border}; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 15px; font-weight: 600; color: ${COLORS.text}; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .icon { font-size: 18px; }
+  
+  /* ── Stat cards ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: ${COLORS.card}; border: 1px solid ${COLORS.border}; border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 14px; }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .stat-icon.orange { background: rgba(212,80,10,0.1); }
+  .stat-icon.green { background: rgba(26,107,58,0.1); }
+  .stat-icon.blue { background: rgba(37,99,235,0.1); }
+  .stat-icon.purple { background: rgba(124,58,237,0.1); }
+  .stat-icon.amber { background: rgba(245,158,11,0.1); }
+  .stat-icon.red { background: rgba(220,38,38,0.1); }
+  .stat-body .label { font-size: 12px; color: ${COLORS.textMuted}; margin-bottom: 4px; }
+  .stat-body .value { font-size: 26px; font-weight: 700; color: ${COLORS.text}; line-height: 1; }
+  .stat-body .sub { font-size: 12px; color: ${COLORS.textMuted}; margin-top: 3px; }
+  
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid ${COLORS.border}; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: ${COLORS.bg}; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; color: ${COLORS.textMuted}; border-bottom: 1px solid ${COLORS.border}; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid ${COLORS.border}; color: ${COLORS.text}; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: ${COLORS.bg}; }
+  .tfoot td { background: #f0f9f4; font-weight: 600; color: ${COLORS.secondary}; }
+  
+  /* ── Forms ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-control { border: 1px solid ${COLORS.border}; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: ${COLORS.text}; background: #fff; font-family: inherit; transition: border-color 0.15s; width: 100%; }
+  .form-control:focus { outline: none; border-color: ${COLORS.primary}; box-shadow: 0 0 0 3px rgba(212,80,10,0.1); }
+  select.form-control { cursor: pointer; }
+  
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: ${COLORS.primary}; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: ${COLORS.primaryDark}; }
+  .btn-secondary { background: ${COLORS.secondary}; color: #fff; }
+  .btn-secondary:hover:not(:disabled) { background: #155c31; }
+  .btn-outline { background: transparent; border: 1px solid ${COLORS.border}; color: ${COLORS.text}; }
+  .btn-outline:hover:not(:disabled) { border-color: ${COLORS.primary}; color: ${COLORS.primary}; }
+  .btn-danger { background: ${COLORS.danger}; color: #fff; border: none; cursor: pointer; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .badge-draft { background: #FEF9C3; color: #92400E; }
+  .badge-submitted { background: #DBEAFE; color: #1D4ED8; }
+  .badge-approved { background: #D1FAE5; color: #065F46; }
+  .badge-locked { background: #F3F4F6; color: #374151; }
+  .badge-success { background: #D1FAE5; color: #065F46; }
+  .badge-danger { background: #FEE2E2; color: #991B1B; }
+  
+  /* ── Login ── */
+  .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, ${COLORS.navBg} 0%, #2C4A70 50%, ${COLORS.primaryDark} 100%);
+    background-size: 200% 200%; animation: gradientShift 12s ease infinite;
+    padding: 20px; position: relative; overflow: hidden; }
+  @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+  .login-screen::before, .login-screen::after {
+    content: ""; position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,80,10,0.25) 0%, transparent 70%);
+    animation: floatBlob 18s ease-in-out infinite;
+  }
+  .login-screen::before { width: 400px; height: 400px; top: -100px; left: -100px; }
+  .login-screen::after { width: 500px; height: 500px; bottom: -150px; right: -100px;
+    background: radial-gradient(circle, rgba(26,107,58,0.25) 0%, transparent 70%);
+    animation-delay: -9s; }
+  @keyframes floatBlob {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(40px,30px) scale(1.1); }
+    66% { transform: translate(-30px,40px) scale(0.95); }
+  }
+
+  .login-card { background: #fff; border-radius: 20px; padding: 48px; width: 100%; max-width: 420px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3); position: relative; z-index: 1;
+    animation: cardEnter 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes cardEnter { from { opacity:0; transform: translateY(30px) scale(0.96); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+  .login-brand { text-align: center; margin-bottom: 32px; }
+  .login-logo { width: 88px; height: 88px; object-fit: contain; margin: 0 auto 12px;
+    display: block; animation: logoFloat 3.5s ease-in-out infinite; filter: drop-shadow(0 6px 14px rgba(212,80,10,0.3)); }
+  @keyframes logoFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+
+  .login-om { font-size: 48px; margin-bottom: 8px; }
+  .login-brand h1 { font-size: 20px; font-weight: 800; color: ${COLORS.navBg}; line-height: 1.2;
+    animation: fadeInUp 0.7s ease 0.15s both; }
+  .login-brand p { font-size: 13px; color: ${COLORS.textMuted}; margin-top: 4px;
+    animation: fadeInUp 0.7s ease 0.3s both; }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .login-form { display: flex; flex-direction: column; gap: 16px; animation: fadeInUp 0.7s ease 0.4s both; }
+  .login-form .form-control { transition: all 0.25s ease; }
+  .login-form .form-control:focus { transform: scale(1.01); box-shadow: 0 0 0 3px rgba(212,80,10,0.15); border-color: ${COLORS.primary}; }
+  .login-form .btn-primary { transition: all 0.25s ease; }
+  .login-form .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,80,10,0.35); }
+  .login-form .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+
+  .login-hint { background: ${COLORS.bg}; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: ${COLORS.textMuted}; line-height: 1.6;
+    animation: fadeInUp 0.7s ease 0.5s both; }
+  
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid ${COLORS.border}; margin-bottom: 24px; overflow-x: auto; }
+  .tab { padding: 10px 18px; font-size: 14px; font-weight: 500; color: ${COLORS.textMuted}; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: ${COLORS.primary}; }
+  .tab.active { color: ${COLORS.primary}; border-bottom-color: ${COLORS.primary}; font-weight: 600; }
+  
+  /* ── Number input ── */
+  .num-input { border: 1px solid ${COLORS.border}; border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 70px; text-align: center; font-family: inherit; transition: border-color 0.15s; }
+  .num-input:focus { outline: none; border-color: ${COLORS.primary}; }
+  .num-input:disabled { background: ${COLORS.bg}; color: ${COLORS.textMuted}; }
+  
+  /* ── Progress / Alerts ── */
+  .alert { border-radius: 10px; padding: 12px 16px; font-size: 14px; margin-bottom: 16px; display: flex; gap: 8px; align-items: flex-start; }
+  .alert-info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+  .alert-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+  .alert-warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  .alert-danger { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+  
+  /* ── Chart bar ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; color: ${COLORS.textMuted}; width: 160px; flex-shrink: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 22px; background: ${COLORS.bg}; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: ${COLORS.primary}; border-radius: 4px; transition: width 0.5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+  .bar-fill span { font-size: 11px; font-weight: 600; color: #fff; }
+  .bar-fill.green { background: ${COLORS.secondary}; }
+  .bar-fill.amber { background: ${COLORS.accent}; }
+  
+  /* ── Growth indicator ── */
+  .growth-positive { color: ${COLORS.success}; font-weight: 600; }
+  .growth-negative { color: ${COLORS.danger}; font-weight: 600; }
+  
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sidebar { width: 240px; transform: translateX(-100%); transition: transform 0.3s; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar.collapsed { transform: translateX(-100%); }
+    .main-content { margin-left: 0 !important; }
+    .sidebar-brand, .nav-item span, .nav-section, .user-info { display: block; }
+    .nav-item { font-size: 15px; padding: 12px 16px; }
+    .nav-icon { font-size: 18px; }
+    .page { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; }
+  }
+  @media (min-width: 769px) {
+    .mobile-overlay { display: none; }
+  }
+  
+  /* ── District banner ── */
+  .district-banner { background: linear-gradient(135deg, ${COLORS.navBg} 0%, #2C4A70 100%); color: #fff; padding: 20px 28px; display: flex; align-items: center; gap: 16px; }
+  .banner-logo { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
+  .banner-text h2 { font-size: 16px; font-weight: 700; }
+  .banner-text p { font-size: 13px; opacity: 0.6; }
+  .banner-year { margin-left: auto; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+  
+  .section-divider { border: none; border-top: 1px solid ${COLORS.border}; margin: 24px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  
+  .class-strength-table th, .class-strength-table td { padding: 8px 12px; color: #1C2A40; }
+  .class-strength-table td strong { color: #1C2A40; }
+  .class-strength-table .total-row td { background: #f0f9f4; font-weight: 700; color: ${COLORS.secondary}; border-top: 2px solid ${COLORS.border}; }
+  
+  .submitted-overlay { pointer-events: none; opacity: 0.7; }
+`;
+
+// ─── App Component ────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(null);
+  const [schools, setSchools] = useState(INITIAL_SCHOOLS);
+  const [schoolData, setSchoolData] = useState(INITIAL_SCHOOL_DATA);
+  const [page, setPage] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedSchoolId, setSelectedSchoolId] = useState(null);
+  const [dataTab, setDataTab] = useState("strength");
+  const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
+  const [users, setUsers] = useState(USERS);
+
+  const login = (username, password) => {
+    const u = users.find(x => x.username === username && x.password === password);
+    if (u) { setUser(u); setPage("dashboard"); return true; }
+    return false;
+  };
+
+  const updateUserPassword = (userId, newPassword) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, password: newPassword } : u));
+  };
+
+  const logout = () => { setUser(null); setPage("dashboard"); };
+
+  const updateSchoolProfile = (id, updates) => {
+    setSchools(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const updateData = (schoolId, field, value) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], [field]: value }
+    }));
+  };
+
+  const submitData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "submitted", submittedAt: new Date().toISOString() }
+    }));
+  };
+
+  const approveData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "approved" }
+    }));
+  };
+
+  const lockData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "locked", lockedAt: new Date().toISOString() }
+    }));
+  };
+
+  const unlockData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "approved", lockedAt: null }
+    }));
+  };
+
+  const addSchool = (school) => {
+    const id = schools.length + 1;
+    setSchools(prev => [...prev, { ...school, id }]);
+    setSchoolData(prev => ({ ...prev, [id]: makeSchoolData(id) }));
+  };
+
+  const deleteSchool = (id) => {
+    if (!window.confirm("ഈ സ്കൂൾ നീക്കം ചെയ്യണോ?")) return;
+    setSchools(prev => prev.filter(s => s.id !== id));
+    setSchoolData(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  if (!user) return <LoginScreen onLogin={login} />;
+
+  const mySchoolId = user.role === "school" ? user.schoolId : (selectedSchoolId || schools[0]?.id);
+  const mySchool = schools.find(s => s.id === mySchoolId);
+  const myData = schoolData[mySchoolId] || makeSchoolData(mySchoolId);
+  const isLocked = myData.status === "locked";
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className="app-shell">
+        <Sidebar user={user} page={page} setPage={setPage} sidebarOpen={sidebarOpen} onLogout={logout} onToggle={() => setSidebarOpen(o => !o)} />
+        <div className={`main-content ${sidebarOpen ? "" : "full"}`}>
+          <div className="district-banner">
+            <img src={LOGO_BASE64} alt="BVN Kerala" className="banner-logo" />
+            <div className="banner-text">
+              <h2>Bharatheeya Vidya Niketan – Kollam District</h2>
+              <p>School Information Management System</p>
+            </div>
+            <span className="banner-year">2026–27</span>
+          </div>
+          <Topbar title={pageTitle(page)} onToggle={() => setSidebarOpen(o => !o)} user={user} />
+          <div className="page">
+            {page === "dashboard" && (
+              user.role === "admin"
+                ? <AdminDashboard schools={schools} schoolData={schoolData} />
+                : <SchoolDashboard school={mySchool} data={myData} />
+            )}
+            {page === "schools" && user.role === "admin" && (
+              <SchoolsPage schools={schools} schoolData={schoolData}
+                onSelect={(id) => { setSelectedSchoolId(id); setPage("data-entry"); }}
+                onAdd={addSchool}
+                onDelete={deleteSchool}
+                onApprove={approveData} onLock={lockData} onUnlock={unlockData}
+              />
+            )}
+            {/* School users blocked from district pages */}
+            {page === "schools" && user.role === "school" && (
+              <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>
+            )}
+            {page === "users" && user.role === "school" && (
+              <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>
+            )}
+            {page === "profile" && (
+              <ProfilePage school={mySchool} onSave={(u) => updateSchoolProfile(mySchoolId, u)} readOnly={user.role === "school" ? isLocked : false} />
+            )}
+            {page === "data-entry" && (
+              <DataEntryPage
+                school={mySchool} data={myData}
+                onUpdate={(f, v) => updateData(mySchoolId, f, v)}
+                onSubmit={() => submitData(mySchoolId)}
+                locked={isLocked}
+                tab={dataTab} setTab={setDataTab}
+              />
+            )}
+            {page === "reports" && (
+              <ReportsPage
+                schools={user.role === "school" ? schools.filter(s => s.id === user.schoolId) : schools}
+                schoolData={schoolData}
+                selectedId={user.role === "school" ? user.schoolId : null}
+                isSchoolUser={user.role === "school"}
+              />
+            )}
+            {page === "users" && user.role === "admin" && (
+              <UsersPage schools={schools} users={users} onUpdatePassword={updateUserPassword} />
+            )}
+            {page === "teachers" && user.role === "school" && (
+              <TeachersPage data={myData} subjects={subjects}
+                onUpdate={(f,v) => updateData(mySchoolId, f, v)} />
+            )}
+            {page === "samithi" && user.role === "school" && (
+              <SamithiPage data={myData}
+                onUpdate={(f,v) => updateData(mySchoolId, f, v)} />
+            )}
+            {page === "subjects" && user.role === "admin" && (
+              <SubjectsPage subjects={subjects} onSave={(s) => setSubjects(s)} />
+            )}
+            {page === "teacher-reports" && user.role === "admin" && (
+              <TeacherReportsPage schools={schools} schoolData={schoolData} subjects={subjects} />
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Login ────────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 400));
+    if (!onLogin(username, password)) setError("Invalid username or password.");
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className="login-screen">
+        <div className="login-card">
+          <div className="login-brand">
+            <img src={LOGO_BASE64} alt="BVN Kerala" className="login-logo" />
+            <h1>Bharatheeya Vidya Niketan<br/>Kollam District</h1>
+            <p>School Information Management System · 2026–27</p>
+          </div>
+          <div className="login-form">
+            {error && <div className="alert alert-danger">⚠️ {error}</div>}
+            <div className="form-group">
+              <label>Username</label>
+              <input className="form-control" value={username} onChange={e => { setUsername(e.target.value); setError(""); }} placeholder="admin or bvn001" />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" className="form-control" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
+            </div>
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handle} disabled={loading}>
+              {loading ? "Signing in…" : "Sign In →"}
+            </button>
+            <div className="login-hint">
+              <strong>Demo credentials:</strong><br/>
+              Admin: <code>admin</code> / <code>admin123</code><br/>
+              School: <code>bvn001</code> – <code>bvn009</code> / <code>school123</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────
+function Sidebar({ user, page, setPage, sidebarOpen, onLogout, onToggle }) {
+  const adminNav = [
+    { key: "dashboard", icon: "📊", label: "Dashboard" },
+    { key: "schools", icon: "🏫", label: "Schools" },
+    { key: "reports", icon: "📄", label: "Reports" },
+    { key: "teacher-reports", icon: "👨‍🏫", label: "Teacher Reports" },
+    { key: "users", icon: "👥", label: "Users" },
+    { key: "subjects", icon: "📚", label: "Subjects" },
+  ];
+  const schoolNav = [
+    { key: "dashboard", icon: "📊", label: "My Dashboard" },
+    { key: "profile", icon: "🏫", label: "School Profile" },
+    { key: "data-entry", icon: "✏️", label: "Data Entry" },
+    { key: "teachers", icon: "👨‍🏫", label: "അധ്യാപകർ" },
+    { key: "samithi", icon: "🤝", label: "സമിതി" },
+    { key: "reports", icon: "📄", label: "My Report" },
+  ];
+  const nav = user.role === "admin" ? adminNav : schoolNav;
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+  const handleNav = (key) => { setPage(key); if (isMobile && onToggle) onToggle(); };
+
+  return (
+    <>
+      {sidebarOpen && isMobile && (
+        <div className="mobile-overlay" onClick={onToggle} />
+      )}
+      <div className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">ॐ</div>
+          <div className="sidebar-brand">
+            <h2>BVN Kollam</h2>
+            <p>SIMS 2026–27</p>
+          </div>
+        </div>
+        <nav className="sidebar-nav">
+          <div className="nav-section">Main Menu</div>
+          {nav.map(n => (
+            <div key={n.key} className={`nav-item ${page === n.key ? "active" : ""}`} onClick={() => handleNav(n.key)}>
+              <span className="nav-icon">{n.icon}</span>
+              <span>{n.label}</span>
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="user-avatar">{user.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{user.role === "admin" ? "Administrator" : user.name.split(" ")[0]}</div>
+              <div className="role">{user.role === "admin" ? "District Admin" : "School User"}</div>
+            </div>
+          </div>
+          <button className="btn btn-outline btn-sm" style={{ width: "100%", justifyContent: "center", marginTop: 12 }} onClick={onLogout}>
+            🚪 <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Topbar ───────────────────────────────────────────────────────────────
+function Topbar({ title, onToggle, user }) {
+  return (
+    <div className="topbar">
+      <button className="btn-icon" onClick={onToggle}>☰</button>
+      <div className="topbar-title">{title}</div>
+      <span className="topbar-badge">{user.role === "admin" ? "Admin" : "School"}</span>
+    </div>
+  );
+}
+
+function pageTitle(p) {
+  const m = {
+    dashboard: "Dashboard", schools: "Schools", profile: "School Profile",
+    "data-entry": "Data Entry", reports: "Reports", users: "Users",
+    teachers: "അധ്യാപകർ", samithi: "സമിതി അംഗങ്ങൾ",
+    "teacher-reports": "Teacher Reports", subjects: "Subjects",
+  };
+  return m[p] || p;
+}
+
+// ─── Admin Dashboard ──────────────────────────────────────────────────────
+function AdminDashboard({ schools, schoolData }) {
+  const allData = Object.values(schoolData);
+  const totalStudents = allData.reduce((s, d) => s + sumStrength(d.strength).total, 0);
+  const totalBoys = allData.reduce((s, d) => s + sumStrength(d.strength).boys, 0);
+  const totalGirls = allData.reduce((s, d) => s + sumStrength(d.strength).girls, 0);
+  const totalTeachers = allData.reduce((s, d) => s + Number(d.staff.maleteachers || 0) + Number(d.staff.femaleteachers || 0), 0);
+  const totalNT = allData.reduce((s, d) => s + Number(d.staff.officestaff || 0) + Number(d.staff.ayah || 0) + Number(d.staff.librarian || 0) + Number(d.staff.accountant || 0) + Number(d.staff.otherstaff || 0), 0);
+  const totalAdmissions = allData.reduce((s, d) => {
+    let t = 0; CLASSES.forEach(c => { t += Number(d.admissions[c]?.boys || 0) + Number(d.admissions[c]?.girls || 0); });
+    return s + t;
+  }, 0);
+  const totalSC = allData.reduce((s, d) => s + Number(d.community.SC || 0), 0);
+  const totalST = allData.reduce((s, d) => s + Number(d.community.ST || 0), 0);
+  const totalOBC = allData.reduce((s, d) => s + Number(d.community.OBC || 0), 0);
+  const totalOEC = allData.reduce((s, d) => s + Number(d.community.OEC || 0), 0);
+  const totalGeneral = allData.reduce((s, d) => s + Number(d.community.General || 0), 0);
+
+  const submitted = allData.filter(d => ["submitted","approved","locked"].includes(d.status)).length;
+
+  const schoolStrengths = schools.map(s => ({ name: s.name.split(" ").slice(0, 3).join(" "), val: sumStrength(schoolData[s.id]?.strength || makeStudentStrength()).total }));
+  const maxVal = Math.max(...schoolStrengths.map(x => x.val), 1);
+
+  return (
+    <>
+      <div className="alert alert-info">
+        📌 <strong>{submitted} of {schools.length} schools</strong> have submitted data for 2026–27.
+      </div>
+
+      {/* Local Body Summary Stats */}
+      <LocalBodySummaryCards schools={schools} schoolData={schoolData} />
+
+      <div className="stats-grid">
+        <StatCard icon="🏫" color="orange" label="Total Schools" value={fmtNum(schools.length)} />
+        <StatCard icon="👨‍🎓" color="blue" label="Total Students" value={fmtNum(totalStudents)} sub={`${fmtNum(totalBoys)} Boys · ${fmtNum(totalGirls)} Girls`} />
+        <StatCard icon="👦" color="blue" label="Total Boys" value={fmtNum(totalBoys)} />
+        <StatCard icon="👧" color="purple" label="Total Girls" value={fmtNum(totalGirls)} />
+        <StatCard icon="👩‍🏫" color="green" label="Total Teachers" value={fmtNum(totalTeachers)} />
+        <StatCard icon="👷" color="amber" label="Non-Teaching Staff" value={fmtNum(totalNT)} />
+        <StatCard icon="🆕" color="orange" label="New Admissions" value={fmtNum(totalAdmissions)} />
+        <StatCard icon="📋" color="green" label="SC Students" value={fmtNum(totalSC)} />
+        <StatCard icon="🌿" color="green" label="ST Students" value={fmtNum(totalST)} />
+        <StatCard icon="🔵" color="blue" label="OBC Students" value={fmtNum(totalOBC)} />
+        <StatCard icon="🟡" color="amber" label="OEC Students" value={fmtNum(totalOEC)} />
+        <StatCard icon="⚪" color="red" label="General Students" value={fmtNum(totalGeneral)} />
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title"><span className="icon">📊</span>School-wise Student Strength</div>
+          <div className="bar-chart">
+            {schoolStrengths.map((s, i) => (
+              <div className="bar-row" key={i}>
+                <div className="bar-label" title={s.name}>{s.name}</div>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${(s.val / maxVal) * 100}%` }}>
+                    {s.val > 0 && <span>{s.val}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title"><span className="icon">📝</span>Submission Status</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>School</th><th>Status</th><th>Students</th></tr></thead>
+              <tbody>
+                {schools.map(s => {
+                  const d = schoolData[s.id];
+                  return (
+                    <tr key={s.id}>
+                      <td style={{ fontSize: 13 }}>{s.name.split(" ").slice(0, 4).join(" ")}</td>
+                      <td><StatusBadge status={d?.status || "draft"} /></td>
+                      <td><strong>{fmtNum(sumStrength(d?.strength || makeStudentStrength()).total)}</strong></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }} className="card">
+        <div className="card-title"><span className="icon">🏛️</span>Taluk-wise Summary</div>
+        <TalukSummary schools={schools} schoolData={schoolData} />
+      </div>
+    </>
+  );
+}
+
+function LocalBodySummaryCards({ schools, schoolData }) {
+  const types = ["Grama Panchayat", "Municipality", "Corporation"];
+  const summary = types.map(type => {
+    const typeSchools = schools.filter(s => (s.localBodyType || "Grama Panchayat") === type);
+    const uniqueBodies = [...new Set(typeSchools.map(s => s.localBody).filter(Boolean))];
+    const students = typeSchools.reduce((a, s) => a + sumStrength(schoolData[s.id]?.strength || makeStudentStrength()).total, 0);
+    const taluks = [...new Set(typeSchools.map(s => s.taluk).filter(Boolean))];
+    return { type, count: typeSchools.length, bodies: uniqueBodies, students, taluks };
+  });
+
+  const icons = { "Grama Panchayat": "🌾", "Municipality": "🏘️", "Corporation": "🏙️" };
+  const colors = { "Grama Panchayat": COLORS.secondary, "Municipality": "#1D4ED8", "Corporation": "#7C3AED" };
+  const bgColors = { "Grama Panchayat": "rgba(26,107,58,0.08)", "Municipality": "rgba(29,78,216,0.08)", "Corporation": "rgba(124,58,237,0.08)" };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
+      {summary.map(s => (
+        <div key={s.type} style={{ background: "#fff", border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 18, borderTop: `4px solid ${colors[s.type]}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 24 }}>{icons[s.type]}</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: colors[s.type] }}>{s.type}</div>
+              <div style={{ fontSize: 12, color: COLORS.textMuted }}>{s.bodies.length} local bodies · {s.count} schools</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+            <div style={{ background: bgColors[s.type], borderRadius: 8, padding: "6px 12px", flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: COLORS.textMuted }}>Schools</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: colors[s.type] }}>{s.count}</div>
+            </div>
+            <div style={{ background: bgColors[s.type], borderRadius: 8, padding: "6px 12px", flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: COLORS.textMuted }}>Students</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: colors[s.type] }}>{fmtNum(s.students)}</div>
+            </div>
+          </div>
+          {s.bodies.length > 0 && (
+            <div style={{ fontSize: 12, color: COLORS.textMuted }}>
+              <strong style={{ color: COLORS.text }}>Local Bodies: </strong>
+              {s.bodies.join(" · ")}
+            </div>
+          )}
+          {s.taluks.length > 0 && (
+            <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+              <strong style={{ color: COLORS.text }}>Taluks: </strong>
+              {s.taluks.join(", ")}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── TalukSummary ─────────────────────────────────────────────────────────
+function TalukSummary({ schools, schoolData }) {
+  const taluks = {};
+  schools.forEach(s => {
+    const t = s.taluk || "Unknown";
+    if (!taluks[t]) taluks[t] = { schools: 0, students: 0, boys: 0, girls: 0 };
+    taluks[t].schools++;
+    const st = sumStrength(schoolData[s.id]?.strength || makeStudentStrength());
+    taluks[t].students += st.total;
+    taluks[t].boys += st.boys;
+    taluks[t].girls += st.girls;
+  });
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead><tr><th>Taluk</th><th>Schools</th><th>Boys</th><th>Girls</th><th>Total Students</th></tr></thead>
+        <tbody>
+          {Object.entries(taluks).map(([t, v]) => (
+            <tr key={t}>
+              <td><strong>{t}</strong></td>
+              <td>{v.schools}</td>
+              <td>{fmtNum(v.boys)}</td>
+              <td>{fmtNum(v.girls)}</td>
+              <td><strong>{fmtNum(v.students)}</strong></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── School Dashboard ─────────────────────────────────────────────────────
+function SchoolDashboard({ school, data }) {
+  if (!school) return <div className="alert alert-warning">⚠️ School not found.</div>;
+  const st = sumStrength(data.strength);
+  const totalTeachers = Number(data.staff.maleteachers || 0) + Number(data.staff.femaleteachers || 0);
+  const prev = Number(data.prevYearTotal || 0);
+  const diff = st.total - prev;
+  const growthPct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : 0;
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏫</div>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>{school.name}</h2>
+            <p style={{ fontSize: 13, color: COLORS.textMuted }}>{school.code} · {school.level} · {school.place}</p>
+          </div>
+          <div style={{ marginLeft: "auto" }}><StatusBadge status={data.status} /></div>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="👨‍🎓" color="blue" label="Total Students" value={fmtNum(st.total)} sub={`${fmtNum(st.boys)} B · ${fmtNum(st.girls)} G`} />
+        <StatCard icon="👩‍🏫" color="green" label="Total Teachers" value={fmtNum(totalTeachers)} />
+        <StatCard icon="📈" color={diff >= 0 ? "green" : "red"} label="Growth vs Last Year" value={`${diff >= 0 ? "+" : ""}${fmtNum(diff)}`} sub={`${growthPct}% vs 2025-26`} />
+        <StatCard icon="📝" color="orange" label="Submission Status" value={data.status.charAt(0).toUpperCase() + data.status.slice(1)} />
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">📊 Community Distribution</div>
+          {["SC", "ST", "OBC", "OEC", "General"].map((c, i) => {
+            const v = Number(data.community[c] || 0);
+            const pct = st.total > 0 ? Math.round((v / st.total) * 100) : 0;
+            const colors = ["orange","green","blue","amber","red"];
+            return (
+              <div className="bar-row" key={c} style={{ marginBottom: 8 }}>
+                <div className="bar-label">{c}</div>
+                <div className="bar-track">
+                  <div className={`bar-fill ${colors[i % colors.length]}`} style={{ width: `${pct}%`, background: [COLORS.primary, COLORS.secondary, "#2563EB", COLORS.accent, "#9333EA"][i] }}>
+                    {pct > 5 && <span>{pct}%</span>}
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, color: COLORS.textMuted, width: 32, textAlign: "right" }}>{v}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="card">
+          <div className="card-title">🏷️ School Details</div>
+          <table style={{ width: "100%", fontSize: 13 }}>
+            <tbody>
+              {[["Local Body Type", school.localBodyType || "Grama Panchayat"],["Local Body", school.localBody || school.panchayat || "—"],["Taluk", school.taluk],["Headmaster", school.headmaster],["Establishment", school.estYear],["UDISE", school.udise || "—"],["Email", school.email || "—"]].map(([k, v]) => (
+                <tr key={k}><td style={{ color: COLORS.textMuted, padding: "6px 0", width: 130 }}>{k}</td><td style={{ fontWeight: 500 }}>{v}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Schools Page (Admin) ─────────────────────────────────────────────────
+function SchoolsPage({ schools, schoolData, onSelect, onAdd, onDelete, onApprove, onLock, onUnlock }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [newSchool, setNewSchool] = useState({ name: "", code: "", level: "LP", localBodyType: "Grama Panchayat", localBody: "", taluk: "Kollam", place: "", headmaster: "", estYear: "" });
+
+  const handleAdd = () => {
+    if (!newSchool.name || !newSchool.code) return;
+    onAdd({ ...newSchool, phone: "", email: "", udise: "", hm_mobile: "", building: "", po: "", village: "", district: "Kollam", pin: "", logo: null });
+    setShowAdd(false);
+    setNewSchool({ name: "", code: "", level: "LP", localBodyType: "Grama Panchayat", localBody: "", taluk: "Kollam", place: "", headmaster: "", estYear: "" });
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700 }}>All Schools</h2>
+          <p style={{ fontSize: 13, color: COLORS.textMuted }}>{schools.length} schools registered</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Add School</button>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>School Name</th><th>Code</th><th>Level</th><th>Local Body</th><th>Taluk</th>
+              <th>Students</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {schools.map((s, i) => {
+              const d = schoolData[s.id];
+              const st = sumStrength(d?.strength || makeStudentStrength());
+              const lbColor = s.localBodyType === "Corporation" ? "#7C3AED" : s.localBodyType === "Municipality" ? "#1D4ED8" : COLORS.secondary;
+              return (
+                <tr key={s.id}>
+                  <td>{i + 1}</td>
+                  <td><strong style={{ fontSize: 13 }}>{s.name}</strong><br /><span style={{ fontSize: 11, color: COLORS.textMuted }}>{s.headmaster}</span></td>
+                  <td><code style={{ fontSize: 12, background: COLORS.bg, padding: "2px 6px", borderRadius: 4 }}>{s.code}</code></td>
+                  <td style={{ fontSize: 13 }}>{s.level}</td>
+                  <td>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: lbColor }}>{s.localBodyType === "Corporation" ? "🏙️" : s.localBodyType === "Municipality" ? "🏘️" : "🌾"} {s.localBody}</span>
+                    <br/><span style={{ fontSize: 11, color: COLORS.textMuted }}>{s.localBodyType}</span>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{s.taluk}</td>
+                  <td><strong>{fmtNum(st.total)}</strong></td>
+                  <td><StatusBadge status={d?.status || "draft"} /></td>
+                  <td>
+                    <div className="btn-group" style={{ flexWrap: "wrap", gap: 4 }}>
+                      <button className="btn btn-outline btn-sm" onClick={() => onSelect(s.id)}>✏️ Edit Data</button>
+                      {d?.status === "submitted" && <button className="btn btn-secondary btn-sm" onClick={() => onApprove(s.id)}>✅ Approve</button>}
+                      {d?.status === "approved" && <button className="btn btn-outline btn-sm" onClick={() => onLock(s.id)}>🔒 Lock</button>}
+                      {d?.status === "locked" && <button className="btn btn-outline btn-sm" onClick={() => onUnlock(s.id)}>🔓 Unlock</button>}
+                      <button className="btn btn-secondary btn-sm" style={{background:"#6D28D9"}} onClick={() => printSamithiReport([s], schoolData)} title="ഈ സ്കൂളിന്റെ സമിതി PDF">🤝 സമിതി</button>
+                      <button className="btn btn-secondary btn-sm" style={{background:"#0369A1"}} onClick={() => printAllTeachersReport([s], schoolData)} title="ഈ സ്കൂളിന്റെ Teachers PDF">👨‍🏫 Teachers</button>
+                      <button className="btn btn-secondary btn-sm" style={{background:"#1A6B3A"}} onClick={() => printSchoolReport(s, schoolData[s.id])} title="ഈ സ്കൂളിന്റെ Full Report PDF">📄 Full Report</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => onDelete(s.id)}>🗑️ Remove</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>➕ Add New School</h3>
+            <div className="form-grid">
+              {[["name","School Name"],["code","School Code"],["place","Place"],["headmaster","Headmaster Name"],["estYear","Establishment Year"]].map(([k, label]) => (
+                <div className="form-group" key={k}>
+                  <label>{label}</label>
+                  <input className="form-control" value={newSchool[k]} onChange={e => setNewSchool(p => ({ ...p, [k]: e.target.value }))} />
+                </div>
+              ))}
+              <div className="form-group">
+                <label>Local Body Type</label>
+                <select className="form-control" value={newSchool.localBodyType} onChange={e => setNewSchool(p => ({ ...p, localBodyType: e.target.value, localBody: "" }))}>
+                  <option>Grama Panchayat</option>
+                  <option>Municipality</option>
+                  <option>Corporation</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{newSchool.localBodyType} Name</label>
+                <select className="form-control" value={newSchool.localBody} onChange={e => setNewSchool(p => ({ ...p, localBody: e.target.value }))}>
+                  <option value="">-- Select --</option>
+                  {(KOLLAM_LOCAL_BODIES[newSchool.localBodyType] || []).map(lb => <option key={lb} value={lb}>{lb}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Taluk</label>
+                <select className="form-control" value={newSchool.taluk} onChange={e => setNewSchool(p => ({ ...p, taluk: e.target.value }))}>
+                  {KOLLAM_TALUKS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>School Level</label>
+                <select className="form-control" value={newSchool.level} onChange={e => setNewSchool(p => ({ ...p, level: e.target.value }))}>
+                  {["LP","UP","HS","LP + UP","UP + HS","LP + UP + HS"].map(l => <option key={l}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="btn-group" style={{ marginTop: 20 }}>
+              <button className="btn btn-primary" onClick={handleAdd}>Add School</button>
+              <button className="btn btn-outline" onClick={() => setShowAdd(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Profile Page ─────────────────────────────────────────────────────────
+function ProfilePage({ school, onSave, readOnly }) {
+  const [form, setForm] = useState(school || {});
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { setForm(school || {}); }, [school]);
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const save = () => { onSave(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+
+  if (!school) return <div className="alert alert-warning">School not found.</div>;
+
+  return (
+    <>
+      {saved && <div className="alert alert-success">✅ Profile saved successfully!</div>}
+      {readOnly && <div className="alert alert-warning">🔒 Data is locked. Contact district admin to make changes.</div>}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">🏫 School Information</div>
+        <div className="form-grid">
+          <div className="form-group"><label>School Name</label><input className="form-control" value={form.name || ""} onChange={e => set("name", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>School Code</label><input className="form-control" value={form.code || ""} disabled /></div>
+          <div className="form-group"><label>School Level</label>
+            <select className="form-control" value={form.level || ""} onChange={e => set("level", e.target.value)} disabled={readOnly}>
+              {["LP","UP","HS","LP + UP","UP + HS","LP + UP + HS"].map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label>Establishment Year</label><input className="form-control" value={form.estYear || ""} onChange={e => set("estYear", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Phone</label><input className="form-control" value={form.phone || ""} onChange={e => set("phone", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Email</label><input className="form-control" type="email" value={form.email || ""} onChange={e => set("email", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Website</label><input className="form-control" value={form.website || ""} onChange={e => set("website", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>UDISE Number</label><input className="form-control" value={form.udise || ""} onChange={e => set("udise", e.target.value)} disabled={readOnly} /></div>
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">📍 Address Information</div>
+        <div className="form-grid">
+          {[["building","Building Name"],["place","Place"],["po","Post Office"],["village","Village"]].map(([k, label]) => (
+            <div className="form-group" key={k}>
+              <label>{label}</label>
+              <input className="form-control" value={form[k] || ""} onChange={e => set(k, e.target.value)} disabled={readOnly} />
+            </div>
+          ))}
+          {/* Local Body Type selector */}
+          <div className="form-group">
+            <label>Local Body Type</label>
+            <select className="form-control" value={form.localBodyType || "Grama Panchayat"} onChange={e => { set("localBodyType", e.target.value); set("localBody", ""); }} disabled={readOnly}>
+              <option>Grama Panchayat</option>
+              <option>Municipality</option>
+              <option>Corporation</option>
+            </select>
+          </div>
+          {/* Dynamic local body name based on type */}
+          <div className="form-group">
+            <label>{form.localBodyType || "Grama Panchayat"} Name</label>
+            {readOnly
+              ? <input className="form-control" value={form.localBody || ""} disabled />
+              : <select className="form-control" value={form.localBody || ""} onChange={e => set("localBody", e.target.value)}>
+                  <option value="">-- Select --</option>
+                  {(KOLLAM_LOCAL_BODIES[form.localBodyType || "Grama Panchayat"] || []).map(lb => (
+                    <option key={lb} value={lb}>{lb}</option>
+                  ))}
+                </select>
+            }
+          </div>
+          <div className="form-group">
+            <label>Taluk</label>
+            <select className="form-control" value={form.taluk || ""} onChange={e => set("taluk", e.target.value)} disabled={readOnly}>
+              <option value="">-- Select Taluk --</option>
+              {KOLLAM_TALUKS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          {[["district","District"],["pin","PIN Code"]].map(([k, label]) => (
+            <div className="form-group" key={k}>
+              <label>{label}</label>
+              <input className="form-control" value={form[k] || ""} onChange={e => set(k, e.target.value)} disabled={readOnly} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">👤 Headmaster / Principal</div>
+        <div className="form-grid">
+          <div className="form-group"><label>Name</label><input className="form-control" value={form.headmaster || ""} onChange={e => set("headmaster", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Mobile</label><input className="form-control" value={form.hm_mobile || ""} onChange={e => set("hm_mobile", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Email</label><input className="form-control" value={form.hm_email || ""} onChange={e => set("hm_email", e.target.value)} disabled={readOnly} /></div>
+        </div>
+      </div>
+      {!readOnly && (
+        <button className="btn btn-primary" onClick={save}>💾 Save Profile</button>
+      )}
+    </>
+  );
+}
+
+// ─── Data Entry ───────────────────────────────────────────────────────────
+function DataEntryPage({ school, data, onUpdate, onSubmit, locked, tab, setTab }) {
+  const [saveMsg, setSaveMsg] = useState("");
+  if (!school) return <div className="alert alert-warning">School not found.</div>;
+
+  const st = sumStrength(data.strength);
+  const communityTotal = Object.values(data.community).reduce((a, v) => a + Number(v || 0), 0);
+  const communityMatch = communityTotal === st.total;
+
+  const handleUpdate = (field, value) => {
+    onUpdate(field, value);
+    setSaveMsg("✅ ഡേറ്റ സേവ് ആയി!");
+    setTimeout(() => setSaveMsg(""), 2500);
+  };
+
+  const handleSubmit = () => {
+    if (!communityMatch && st.total > 0) { alert("Community total does not match student strength!"); return; }
+    if (window.confirm("Submit data for 2026–27? You cannot edit after submission.")) onSubmit();
+  };
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 17, fontWeight: 700 }}>{school.name}</h2>
+          <p style={{ fontSize: 13, color: COLORS.textMuted }}>Academic Year: 2026–27 · {school.code}</p>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          <StatusBadge status={data.status} />
+          {!locked && data.status !== "submitted" && data.status !== "approved" && (
+            <button className="btn btn-primary" onClick={handleSubmit}>📤 Submit Data</button>
+          )}
+          {locked && <span style={{ fontSize: 13, color: COLORS.textMuted }}>🔒 Locked</span>}
+        </div>
+      </div>
+
+      {locked && <div className="alert alert-info">🔒 This data has been locked by the District Administrator. Contact admin for changes.</div>}
+
+      <div className="tabs">
+        {[["strength","📚 Student Strength"],["community","🏷️ Community"],["admissions","🆕 Admissions"],["staff","👩‍🏫 Staff"],["growth","📈 Growth"]].map(([k, label]) => (
+          <div key={k} className={`tab ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{label}</div>
+        ))}
+      </div>
+
+      {saveMsg && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, background: "#166534", color: "#fff", padding: "12px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, zIndex: 999, boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}>
+          {saveMsg}
+        </div>
+      )}
+      <div className={locked ? "submitted-overlay" : ""}>
+        {tab === "strength" && <StrengthTab strength={data.strength} onUpdate={s => handleUpdate("strength", s)} />}
+        {tab === "community" && <CommunityTab community={data.community} total={st.total} onUpdate={c => handleUpdate("community", c)} />}
+        {tab === "admissions" && <AdmissionsTab admissions={data.admissions} onUpdate={a => handleUpdate("admissions", a)} />}
+        {tab === "staff" && <StaffTab staff={data.staff} onUpdate={s => handleUpdate("staff", s)} />}
+        {tab === "growth" && <GrowthTab current={st.total} prev={data.prevYearTotal} prevNewAdmissions={data.prevYearNewAdmissions} onUpdate={(field, val) => handleUpdate(field, val)} />}
+      </div>
+    </>
+  );
+}
+
+function StrengthTab({ strength, onUpdate }) {
+  const set = (cls, gender, val) => {
+    onUpdate({ ...strength, [cls]: { ...strength[cls], [gender]: Number(val) || 0 } });
+  };
+  const st = sumStrength(strength);
+
+  return (
+    <div className="card">
+      <div className="card-title">📚 Class-wise Student Strength</div>
+      <div className="table-wrap">
+        <table className="class-strength-table">
+          <thead>
+            <tr><th>Class</th><th>Boys</th><th>Girls</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            {CLASSES.map(c => {
+              const b = Number(strength[c]?.boys || 0), g = Number(strength[c]?.girls || 0);
+              return (
+                <tr key={c}>
+                  <td><strong style={{ color: COLORS.text, fontSize: 14 }}>{c}</strong></td>
+                  <td><input type="number" min="0" className="num-input" value={b || ""} onChange={e => set(c, "boys", e.target.value)} placeholder="0" /></td>
+                  <td><input type="number" min="0" className="num-input" value={g || ""} onChange={e => set(c, "girls", e.target.value)} placeholder="0" /></td>
+                  <td><strong style={{ color: b + g > 0 ? COLORS.secondary : COLORS.textMuted }}>{b + g}</strong></td>
+                </tr>
+              );
+            })}
+            <tr className="total-row">
+              <td><strong style={{ color: COLORS.secondary }}>TOTAL</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(st.boys)}</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(st.girls)}</strong></td>
+              <td><strong style={{ color: COLORS.primary, fontSize: 16 }}>{fmtNum(st.total)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CommunityTab({ community, total, onUpdate }) {
+  const set = (k, v) => onUpdate({ ...community, [k]: Number(v) || 0 });
+  const catTotal = Object.values(community).reduce((a, v) => a + Number(v || 0), 0);
+  const diff = total - catTotal;
+  const ok = diff === 0 || total === 0;
+
+  return (
+    <div className="card">
+      <div className="card-title">🏷️ Community / Category</div>
+      {!ok && <div className="alert alert-warning">⚠️ Category total ({fmtNum(catTotal)}) differs from student strength ({fmtNum(total)}) by {Math.abs(diff)}</div>}
+      {ok && total > 0 && <div className="alert alert-success">✅ Category total matches student strength.</div>}
+      <div className="form-grid">
+        {["SC","ST","OBC","OEC","General"].map(c => (
+          <div className="form-group" key={c}>
+            <label>{c}</label>
+            <input type="number" min="0" className="form-control" value={community[c] || ""} onChange={e => set(c, e.target.value)} placeholder="0" />
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 16, padding: "12px 16px", background: COLORS.bg, borderRadius: 8, display: "flex", gap: 16 }}>
+        <span style={{ fontSize: 14 }}>Category Total: <strong>{fmtNum(catTotal)}</strong></span>
+        <span style={{ fontSize: 14 }}>Student Strength: <strong>{fmtNum(total)}</strong></span>
+        <span style={{ fontSize: 14, color: ok ? COLORS.success : COLORS.danger, fontWeight: 600 }}>{ok ? "✓ Match" : `✗ Difference: ${Math.abs(diff)}`}</span>
+      </div>
+    </div>
+  );
+}
+
+function AdmissionsTab({ admissions, onUpdate }) {
+  const set = (cls, gender, val) => {
+    onUpdate({ ...admissions, [cls]: { ...admissions[cls], [gender]: Number(val) || 0 } });
+  };
+  let totalB = 0, totalG = 0;
+  CLASSES.forEach(c => { totalB += Number(admissions[c]?.boys || 0); totalG += Number(admissions[c]?.girls || 0); });
+
+  return (
+    <div className="card">
+      <div className="card-title">🆕 New Admissions 2026–27</div>
+      <div className="table-wrap">
+        <table className="class-strength-table">
+          <thead><tr><th>Class</th><th>New Boys</th><th>New Girls</th><th>Total</th></tr></thead>
+          <tbody>
+            {CLASSES.map(c => {
+              const b = Number(admissions[c]?.boys || 0), g = Number(admissions[c]?.girls || 0);
+              return (
+                <tr key={c}>
+                  <td><strong style={{ color: COLORS.text, fontSize: 14 }}>{c}</strong></td>
+                  <td><input type="number" min="0" className="num-input" value={b || ""} onChange={e => set(c, "boys", e.target.value)} placeholder="0" /></td>
+                  <td><input type="number" min="0" className="num-input" value={g || ""} onChange={e => set(c, "girls", e.target.value)} placeholder="0" /></td>
+                  <td><strong style={{ color: b + g > 0 ? COLORS.secondary : COLORS.textMuted }}>{b + g}</strong></td>
+                </tr>
+              );
+            })}
+            <tr className="total-row">
+              <td>TOTAL ADMISSIONS</td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(totalB)}</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(totalG)}</strong></td>
+              <td><strong style={{ color: COLORS.primary, fontSize: 16 }}>{fmtNum(totalB + totalG)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function StaffTab({ staff, onUpdate }) {
+  const set = (k, v) => onUpdate({ ...staff, [k]: Number(v) || 0 });
+  const totalT = Number(staff.maleteachers || 0) + Number(staff.femaleteachers || 0);
+  const trainedTotal = Number(staff.trained || 0) + Number(staff.untrained || 0);
+  const trainedOk = trainedTotal === totalT || totalT === 0;
+  const totalNT = Number(staff.officestaff || 0) + Number(staff.otherstaff || 0) + Number(staff.busstaff || 0) + Number(staff.ayah || 0);
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title">👩‍🏫 Teaching Staff</div>
+        <div className="form-grid">
+          <div className="form-group"><label>Male Teachers</label><input type="number" min="0" className="form-control" value={staff.maleteachers || ""} onChange={e => set("maleteachers", e.target.value)} placeholder="0" /></div>
+          <div className="form-group"><label>Female Teachers</label><input type="number" min="0" className="form-control" value={staff.femaleteachers || ""} onChange={e => set("femaleteachers", e.target.value)} placeholder="0" /></div>
+        </div>
+        <div style={{ marginTop: 12, padding: "10px 14px", background: COLORS.bg, borderRadius: 8, fontSize: 14 }}>
+          Total Teachers: <strong style={{ color: COLORS.secondary }}>{fmtNum(totalT)}</strong>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title">🎓 Teacher Training Status</div>
+        {!trainedOk && <div className="alert alert-warning">⚠️ Trained + Untrained ({trainedTotal}) ≠ Total Teachers ({totalT})</div>}
+        <div className="form-grid">
+          <div className="form-group"><label>Trained Teachers</label><input type="number" min="0" className="form-control" value={staff.trained || ""} onChange={e => set("trained", e.target.value)} placeholder="0" /></div>
+          <div className="form-group"><label>Untrained Teachers</label><input type="number" min="0" className="form-control" value={staff.untrained || ""} onChange={e => set("untrained", e.target.value)} placeholder="0" /></div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">👷 Non-Teaching Staff</div>
+        <div className="form-grid">
+          {[["officestaff","Office Staff<body>
+  <div id="fb-loading"><div class="om">ॐ</div><p>Loading BVN SIMS...</p></div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+    const fbSaveSchools    = (data) => db.collection("config").doc("schools").set({ list: data });
+    const fbSaveSchoolData = (id, data) => db.collection("schoolData").doc(String(id)).set(data);
+    const fbDeleteSchoolData = (id) => db.collection("schoolData").doc(String(id)).delete();
+    const fbSaveSubjects   = (data) => db.collection("config").doc("subjects").set({ list: data });
+    const fbSaveUsers       = (data) => db.collection("config").doc("users").set({ list: data });
+
+    function useFirebase(initialSchools, initialData, initialUsers) {
+      const [schools, setSchools]       = useState(initialSchools);
+      const [schoolData, setSchoolData] = useState(initialData);
+      const [subjects, setSubjects]     = useState(DEFAULT_SUBJECTS);
+      const [users, setUsers]           = useState(initialUsers);
+      const [ready, setReady]           = useState(false);
+      useEffect(() => {
+        Promise.all([
+          db.collection("config").doc("schools").get(),
+          db.collection("config").doc("subjects").get(),
+          db.collection("config").doc("users").get(),
+          db.collection("schoolData").get()
+        ]).then(([schoolsSnap, subSnap, usersSnap, dataSnap]) => {
+          if (schoolsSnap.exists && schoolsSnap.data().list?.length)
+            setSchools(schoolsSnap.data().list);
+          if (subSnap.exists && subSnap.data().list?.length)
+            setSubjects(subSnap.data().list);
+          if (usersSnap.exists && usersSnap.data().list?.length)
+            setUsers(usersSnap.data().list);
+          if (!dataSnap.empty) {
+            const loaded = {};
+            dataSnap.forEach(doc => { loaded[doc.id] = doc.data(); });
+            setSchoolData(prev => ({ ...prev, ...loaded }));
+          }
+          setReady(true);
+          document.getElementById("fb-loading").style.display = "none";
+        }).catch(() => {
+          setReady(true);
+          document.getElementById("fb-loading").style.display = "none";
+        });
+      }, []);
+      return { schools, setSchools, schoolData, setSchoolData, subjects, setSubjects, users, setUsers, ready };
+    }
+
+
+
+
+
 // ─── Colour & Design Tokens ───────────────────────────────────────────────
 // Palette: Deep saffron (#D4500A) as primary, forest green (#1A6B3A) as
 // secondary, ivory (#FDF8F0) background, slate-navy (#1C2A40) for text.
