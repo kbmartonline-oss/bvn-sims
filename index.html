@@ -1,0 +1,3122 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BVN Kollam SIMS 2026-27</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- Firebase v9 compat — CDN versions that work reliably -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase must init AFTER scripts load, BEFORE React
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLot_zfllOGbKkD0Pnx1h8o_YN4874f4M",
+      authDomain: "bvn-sims.firebaseapp.com",
+      projectId: "bvn-sims",
+      storageBucket: "bvn-sims.firebasestorage.app",
+      messagingSenderId: "503563313265",
+      appId: "1:503563313265:web:e28d2f39a9a3602ce53bd0"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    // Enable offline persistence
+    db.enablePersistence().catch(() => {});
+  </script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    #fb-loading { position:fixed;inset:0;background:#1C2A40;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;z-index:9999; }
+    #fb-loading .om { font-size:56px;animation:pulse 1.5s infinite; }
+    #fb-loading p { margin-top:16px;font-size:15px;opacity:0.7; }
+    @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+  </style>
+</head>
+<body>
+  <div id="fb-loading"><div class="om">ॐ</div><p>Loading BVN SIMS...</p></div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+    const fbSaveSchools    = (data) => db.collection("config").doc("schools").set({ list: data });
+    const fbSaveSchoolData = (id, data) => db.collection("schoolData").doc(String(id)).set(data);
+    const fbDeleteSchoolData = (id) => db.collection("schoolData").doc(String(id)).delete();
+    const fbSaveSubjects   = (data) => db.collection("config").doc("subjects").set({ list: data });
+    const fbSaveUsers       = (data) => db.collection("config").doc("users").set({ list: data });
+
+    function useFirebase(initialSchools, initialData, initialUsers) {
+      const [schools, setSchools]       = useState(initialSchools);
+      const [schoolData, setSchoolData] = useState(initialData);
+      const [subjects, setSubjects]     = useState(DEFAULT_SUBJECTS);
+      const [users, setUsers]           = useState(initialUsers);
+      const [ready, setReady]           = useState(false);
+      useEffect(() => {
+        Promise.all([
+          db.collection("config").doc("schools").get(),
+          db.collection("config").doc("subjects").get(),
+          db.collection("config").doc("users").get(),
+          db.collection("schoolData").get()
+        ]).then(([schoolsSnap, subSnap, usersSnap, dataSnap]) => {
+          if (schoolsSnap.exists && schoolsSnap.data().list?.length)
+            setSchools(schoolsSnap.data().list);
+          if (subSnap.exists && subSnap.data().list?.length)
+            setSubjects(subSnap.data().list);
+          if (usersSnap.exists && usersSnap.data().list?.length)
+            setUsers(usersSnap.data().list);
+          if (!dataSnap.empty) {
+            const loaded = {};
+            dataSnap.forEach(doc => { loaded[doc.id] = doc.data(); });
+            setSchoolData(prev => ({ ...prev, ...loaded }));
+          }
+          setReady(true);
+          document.getElementById("fb-loading").style.display = "none";
+        }).catch(() => {
+          setReady(true);
+          document.getElementById("fb-loading").style.display = "none";
+        });
+      }, []);
+      return { schools, setSchools, schoolData, setSchoolData, subjects, setSubjects, users, setUsers, ready };
+    }
+
+
+
+
+
+// ─── Colour & Design Tokens ───────────────────────────────────────────────
+// Palette: Deep saffron (#D4500A) as primary, forest green (#1A6B3A) as
+// secondary, ivory (#FDF8F0) background, slate-navy (#1C2A40) for text.
+// Malayalam-friendly font pairing: Noto Sans Malayalam + Inter.
+// Signature element: glowing "OM" watermark in district header.
+
+const COLORS = {
+  primary: "#D4500A",
+  primaryDark: "#A83D08",
+  secondary: "#1A6B3A",
+  accent: "#F5A623",
+  bg: "#FDF8F0",
+  card: "#FFFFFF",
+  navBg: "#1C2A40",
+  text: "#1C2A40",
+  textMuted: "#6B7280",
+  border: "#E5E0D8",
+  success: "#16A34A",
+  danger: "#DC2626",
+  warning: "#D97706",
+};
+
+// ─── Initial Data ─────────────────────────────────────────────────────────
+// Kollam District Taluks (official 6 taluks)
+const KOLLAM_TALUKS = ["Kollam", "Kottarakkara", "Karunagappally", "Kunnathur", "Punalur", "Pathanapuram"];
+
+// Kollam District Local Bodies
+const KOLLAM_LOCAL_BODIES = {
+  "Grama Panchayat": [
+    "Adichanalloor","Alappad","Alayamon","Anchal","Ariencavu","Chadayamangalam",
+    "Chathannoor","Chavara","Chirakkara","Chithara","Clappana","East Kallada",
+    "Edamulakkal","Elamadu","Elampalloor","Ezhukone","Ittiva","Kadakkal",
+    "Kalluvathukkal","Karavaloor","Kareepra","Kottamkara","Kulakkada",
+    "Kulasekharapuram","Kulathoopuzha","Kummil","Kundara","Kunnathoor",
+    "Mayyanad","Melila","Munroethuruthu","Mylom","Mynagappally","Nedumpana",
+    "Neduvathoor","Neendakara","Nilamel","Oachira","Panayam","Panmana",
+    "Pathanapuram","Pattazhi","Pattazhi Vadakkekara","Pavithreswaram","Perayam",
+    "Perinad","Piravanthoor","Poothakkulam","Pooyappally","Poruvazhy",
+    "Sasthamcotta","Sooranad North","Sooranad South","Thalavoor","Thazhava",
+    "Thekkumbhagom","Thenmala","Thevalakkara","Thodiyoor","Thrikkaruva",
+    "Thrikkovilvattom","Ummannoor","Velinalloor","Veliyam","Vettikkavala",
+    "Vilakkudy","West Kallada","Yeroor"
+  ],
+  "Municipality": ["Karunagappally","Kottarakkara","Paravur","Punalur"],
+  "Corporation": ["Kollam Corporation"],
+};
+
+const DEFAULT_SUBJECTS = [
+  "Malayalam","English","Hindi","Sanskrit","EVS","IT","Maths","Yoga",
+  "Sharirik","Music","Naithikam","GK","Physics","Biology","Chemistry",
+  "Kalolsavam","Preacher","Talent Search Exam","Shishu Vatika","NIOS","Sasthrolsavam"
+];
+
+const SAMITHI_ROLES = ["President","Vice President","Secretary","Joint Secretary","Treasurer","Samithi Member"];
+
+const INITIAL_SCHOOLS = [
+  { id: 1, code: "BVN001", name: "PUTHIYAKAVU CENTRAL SCHOOL", localBodyType: "Grama Panchayat", localBody: "Neendakara", taluk: "Kollam", level: "LP + UP + HS", phone: "", email: "", udise: "", estYear: "1985", headmaster: "Rajesh Kumar P", hm_mobile: "", building: "", place: "Puthiyakavu", po: "Puthiyakavu", village: "Puthiyakavu", district: "Kollam", pin: "691302", logo: null },
+  { id: 2, code: "BVN002", name: "VYASA VIDYAMANDIR", localBodyType: "Corporation", localBody: "Kollam Corporation", taluk: "Kollam", level: "UP + HS", phone: "", email: "", udise: "", estYear: "1990", headmaster: "Sreedharan Nair K", hm_mobile: "", building: "", place: "Kollam", po: "Kollam", village: "Kollam", district: "Kollam", pin: "691001", logo: null },
+  { id: 3, code: "BVN003", name: "SREE SANKARA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Alappad", taluk: "Karunagappally", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1992", headmaster: "Meena Devi S", hm_mobile: "", building: "", place: "Valathungal", po: "Valathungal", village: "Valathungal", district: "Kollam", pin: "690503", logo: null },
+  { id: 4, code: "BVN004", name: "SREERAMA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Kalluvathukkal", taluk: "Kunnathur", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1988", headmaster: "Suresh Babu T", hm_mobile: "", building: "", place: "Kalluvathukkal", po: "Kalluvathukkal", village: "Kalluvathukkal", district: "Kollam", pin: "690520", logo: null },
+  { id: 5, code: "BVN005", name: "SREEHARI VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Anchal", taluk: "Punalur", level: "LP", phone: "", email: "", udise: "", estYear: "1995", headmaster: "Vijayalakshmi R", hm_mobile: "", building: "", place: "Puthur", po: "Puthur", village: "Puthur", district: "Kollam", pin: "691302", logo: null },
+  { id: 6, code: "BVN006", name: "SARASWATHY VIDYA NIKETHAN (NORTH)", localBodyType: "Grama Panchayat", localBody: "Panmana", taluk: "Karunagappally", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1993", headmaster: "Padmavathy K", hm_mobile: "", building: "", place: "Thrikkunnapuzha North", po: "Thrikkunnapuzha", village: "Thrikkunnapuzha", district: "Kollam", pin: "690520", logo: null },
+  { id: 7, code: "BVN007", name: "SARASWATHY VIDYA NIKETHAN (VAKKANAD)", localBodyType: "Grama Panchayat", localBody: "Pathanapuram", taluk: "Pathanapuram", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1997", headmaster: "Krishnan Nair P", hm_mobile: "", building: "", place: "Vakkanad", po: "Vakkanad", village: "Vakkanad", district: "Kollam", pin: "691523", logo: null },
+  { id: 8, code: "BVN008", name: "SREE SANKARA VIDYAPEEDOM", localBodyType: "Municipality", localBody: "Kottarakkara", taluk: "Kottarakkara", level: "UP + HS", phone: "", email: "", udise: "", estYear: "1986", headmaster: "Devadas M", hm_mobile: "", building: "", place: "Pattazhy", po: "Pattazhy", village: "Pattazhy", district: "Kollam", pin: "691308", logo: null },
+  { id: 9, code: "BVN009", name: "VEDHA VYASA VIDYA NIKETHAN", localBodyType: "Grama Panchayat", localBody: "Kottamkara", taluk: "Kottarakkara", level: "LP + UP", phone: "", email: "", udise: "", estYear: "1999", headmaster: "Sarada Devi N", hm_mobile: "", building: "", place: "Bhoothakulam", po: "Bhoothakulam", village: "Bhoothakulam", district: "Kollam", pin: "691302", logo: null },
+];
+
+const CLASSES = ["Play Class","LKG","UKG","Class 1","Class 2","Class 3","Class 4","Class 5","Class 6","Class 7","Class 8","Class 9","Class 10"];
+
+const makeStudentStrength = () => CLASSES.reduce((a,c) => ({ ...a, [c]: { boys: 0, girls: 0 } }), {});
+const makeCommunity = () => ({ SC: 0, ST: 0, OBC: 0, OEC: 0, General: 0 });
+const makeAdmissions = () => CLASSES.reduce((a,c) => ({ ...a, [c]: { boys: 0, girls: 0 } }), {});
+const makeStaff = () => ({ maleteachers: 0, femaleteachers: 0, trained: 0, untrained: 0, officestaff: 0, ayah: 0, librarian: 0, accountant: 0, otherstaff: 0 });
+
+const makeSchoolData = (id) => ({
+  schoolId: id,
+  academicYear: "2026-27",
+  strength: makeStudentStrength(),
+  community: makeCommunity(),
+  admissions: makeAdmissions(),
+  staff: makeStaff(),
+  prevYearTotal: 0,
+  prevYearNewAdmissions: 0,
+  teachers: [],
+  samithi: [],
+  status: "draft",
+  submittedAt: null,
+  lockedAt: null,
+});
+
+const INITIAL_SCHOOL_DATA = INITIAL_SCHOOLS.reduce((a, s) => {
+  a[s.id] = makeSchoolData(s.id);
+  return a;
+}, {});
+
+// ─── Auth Config ──────────────────────────────────────────────────────────
+const USERS = [
+  { id: "admin", username: "admin", password: "admin123", role: "admin", name: "District Administrator" },
+  ...INITIAL_SCHOOLS.map((s, i) => ({
+    id: `school_${s.id}`,
+    username: `bvn${String(i + 1).padStart(3, "0")}`,
+    password: "school123",
+    role: "school",
+    schoolId: s.id,
+    name: s.name,
+  })),
+];
+
+// ─── Utility functions ────────────────────────────────────────────────────
+const sumStrength = (strength) => {
+  let boys = 0, girls = 0;
+  CLASSES.forEach(c => { boys += Number(strength[c]?.boys || 0); girls += Number(strength[c]?.girls || 0); });
+  return { boys, girls, total: boys + girls };
+};
+
+const fmtNum = (n) => Number(n).toLocaleString("en-IN");
+
+// ─── Styles ───────────────────────────────────────────────────────────────
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Noto Sans Malayalam', sans-serif; background: ${COLORS.bg}; color: ${COLORS.text}; min-height: 100vh; }
+  
+  /* ── Layout ── */
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; background: ${COLORS.navBg}; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+  .sidebar.open { width: 260px; }
+  .sidebar.collapsed { width: 64px; }
+  .main-content { flex: 1; margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.3s; }
+  .main-content.full { margin-left: 64px; }
+  
+  /* ── Sidebar ── */
+  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo { width: 40px; height: 40px; background: ${COLORS.primary}; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; font-weight: 700; flex-shrink: 0; }
+  .sidebar-brand { overflow: hidden; }
+  .sidebar-brand h2 { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .sidebar-brand p { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .sidebar-nav { flex: 1; padding: 12px 0; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; font-size: 14px; white-space: nowrap; overflow: hidden; }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-item.active { background: rgba(212,80,10,0.15); border-left-color: ${COLORS.primary}; color: #fff; }
+  .nav-icon { width: 20px; flex-shrink: 0; text-align: center; font-size: 16px; }
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .user-chip { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: ${COLORS.primary}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .user-info { overflow: hidden; }
+  .user-info .name { font-size: 13px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-info .role { font-size: 11px; color: rgba(255,255,255,0.45); }
+  
+  /* ── Topbar ── */
+  .topbar { background: #fff; border-bottom: 1px solid ${COLORS.border}; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-size: 18px; font-weight: 700; color: ${COLORS.text}; flex: 1; }
+  .topbar-badge { background: ${COLORS.primary}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+  .btn-icon { width: 36px; height: 36px; border-radius: 8px; border: 1px solid ${COLORS.border}; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+  .btn-icon:hover { background: ${COLORS.bg}; border-color: ${COLORS.primary}; }
+  
+  /* ── Page ── */
+  .page { padding: 28px 28px 48px; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 24px; font-weight: 700; color: ${COLORS.text}; }
+  .page-header p { color: ${COLORS.textMuted}; margin-top: 4px; font-size: 14px; }
+  
+  /* ── Cards ── */
+  .card { background: ${COLORS.card}; border: 1px solid ${COLORS.border}; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 15px; font-weight: 600; color: ${COLORS.text}; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .icon { font-size: 18px; }
+  
+  /* ── Stat cards ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: ${COLORS.card}; border: 1px solid ${COLORS.border}; border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 14px; }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .stat-icon.orange { background: rgba(212,80,10,0.1); }
+  .stat-icon.green { background: rgba(26,107,58,0.1); }
+  .stat-icon.blue { background: rgba(37,99,235,0.1); }
+  .stat-icon.purple { background: rgba(124,58,237,0.1); }
+  .stat-icon.amber { background: rgba(245,158,11,0.1); }
+  .stat-icon.red { background: rgba(220,38,38,0.1); }
+  .stat-body .label { font-size: 12px; color: ${COLORS.textMuted}; margin-bottom: 4px; }
+  .stat-body .value { font-size: 26px; font-weight: 700; color: ${COLORS.text}; line-height: 1; }
+  .stat-body .sub { font-size: 12px; color: ${COLORS.textMuted}; margin-top: 3px; }
+  
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid ${COLORS.border}; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: ${COLORS.bg}; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; color: ${COLORS.textMuted}; border-bottom: 1px solid ${COLORS.border}; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid ${COLORS.border}; color: ${COLORS.text}; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: ${COLORS.bg}; }
+  .tfoot td { background: #f0f9f4; font-weight: 600; color: ${COLORS.secondary}; }
+  
+  /* ── Forms ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-control { border: 1px solid ${COLORS.border}; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: ${COLORS.text}; background: #fff; font-family: inherit; transition: border-color 0.15s; width: 100%; }
+  .form-control:focus { outline: none; border-color: ${COLORS.primary}; box-shadow: 0 0 0 3px rgba(212,80,10,0.1); }
+  select.form-control { cursor: pointer; }
+  
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: ${COLORS.primary}; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: ${COLORS.primaryDark}; }
+  .btn-secondary { background: ${COLORS.secondary}; color: #fff; }
+  .btn-secondary:hover:not(:disabled) { background: #155c31; }
+  .btn-outline { background: transparent; border: 1px solid ${COLORS.border}; color: ${COLORS.text}; }
+  .btn-outline:hover:not(:disabled) { border-color: ${COLORS.primary}; color: ${COLORS.primary}; }
+  .btn-danger { background: ${COLORS.danger}; color: #fff; border: none; cursor: pointer; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .badge-draft { background: #FEF9C3; color: #92400E; }
+  .badge-submitted { background: #DBEAFE; color: #1D4ED8; }
+  .badge-approved { background: #D1FAE5; color: #065F46; }
+  .badge-locked { background: #F3F4F6; color: #374151; }
+  .badge-success { background: #D1FAE5; color: #065F46; }
+  .badge-danger { background: #FEE2E2; color: #991B1B; }
+  
+  /* ── Login ── */
+  .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, ${COLORS.navBg} 0%, #2C4A70 100%); padding: 20px; }
+  .login-card { background: #fff; border-radius: 20px; padding: 48px; width: 100%; max-width: 420px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); }
+  .login-brand { text-align: center; margin-bottom: 32px; }
+  .login-om { font-size: 48px; margin-bottom: 8px; }
+  .login-brand h1 { font-size: 20px; font-weight: 800; color: ${COLORS.navBg}; line-height: 1.2; }
+  .login-brand p { font-size: 13px; color: ${COLORS.textMuted}; margin-top: 4px; }
+  .login-form { display: flex; flex-direction: column; gap: 16px; }
+  .login-hint { background: ${COLORS.bg}; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: ${COLORS.textMuted}; line-height: 1.6; }
+  
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid ${COLORS.border}; margin-bottom: 24px; overflow-x: auto; }
+  .tab { padding: 10px 18px; font-size: 14px; font-weight: 500; color: ${COLORS.textMuted}; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: ${COLORS.primary}; }
+  .tab.active { color: ${COLORS.primary}; border-bottom-color: ${COLORS.primary}; font-weight: 600; }
+  
+  /* ── Number input ── */
+  .num-input { border: 1px solid ${COLORS.border}; border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 70px; text-align: center; font-family: inherit; transition: border-color 0.15s; }
+  .num-input:focus { outline: none; border-color: ${COLORS.primary}; }
+  .num-input:disabled { background: ${COLORS.bg}; color: ${COLORS.textMuted}; }
+  
+  /* ── Progress / Alerts ── */
+  .alert { border-radius: 10px; padding: 12px 16px; font-size: 14px; margin-bottom: 16px; display: flex; gap: 8px; align-items: flex-start; }
+  .alert-info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+  .alert-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+  .alert-warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  .alert-danger { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+  
+  /* ── Chart bar ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; color: ${COLORS.textMuted}; width: 160px; flex-shrink: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 22px; background: ${COLORS.bg}; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: ${COLORS.primary}; border-radius: 4px; transition: width 0.5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+  .bar-fill span { font-size: 11px; font-weight: 600; color: #fff; }
+  .bar-fill.green { background: ${COLORS.secondary}; }
+  .bar-fill.amber { background: ${COLORS.accent}; }
+  
+  /* ── Growth indicator ── */
+  .growth-positive { color: ${COLORS.success}; font-weight: 600; }
+  .growth-negative { color: ${COLORS.danger}; font-weight: 600; }
+  
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sidebar { width: 240px; transform: translateX(-100%); transition: transform 0.3s; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar.collapsed { transform: translateX(-100%); }
+    .main-content { margin-left: 0 !important; }
+    .sidebar-brand, .nav-item span, .nav-section, .user-info { display: block; }
+    .nav-item { font-size: 15px; padding: 12px 16px; }
+    .nav-icon { font-size: 18px; }
+    .page { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; }
+  }
+  @media (min-width: 769px) {
+    .mobile-overlay { display: none; }
+  }
+  
+  /* ── District banner ── */
+  .district-banner { background: linear-gradient(135deg, ${COLORS.navBg} 0%, #2C4A70 100%); color: #fff; padding: 20px 28px; display: flex; align-items: center; gap: 16px; }
+  .banner-om { font-size: 36px; opacity: 0.8; }
+  .banner-text h2 { font-size: 16px; font-weight: 700; }
+  .banner-text p { font-size: 13px; opacity: 0.6; }
+  .banner-year { margin-left: auto; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+  
+  .section-divider { border: none; border-top: 1px solid ${COLORS.border}; margin: 24px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  
+  .class-strength-table th, .class-strength-table td { padding: 8px 12px; color: #1C2A40; }
+  .class-strength-table td strong { color: #1C2A40; }
+  .class-strength-table .total-row td { background: #f0f9f4; font-weight: 700; color: ${COLORS.secondary}; border-top: 2px solid ${COLORS.border}; }
+  
+  .submitted-overlay { pointer-events: none; opacity: 0.7; }
+`;
+
+// ─── App Component ────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(null);
+  const [schools, setSchools] = useState(INITIAL_SCHOOLS);
+  const [schoolData, setSchoolData] = useState(INITIAL_SCHOOL_DATA);
+  const [page, setPage] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedSchoolId, setSelectedSchoolId] = useState(null);
+  const [dataTab, setDataTab] = useState("strength");
+  const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
+  const [users, setUsers] = useState(USERS);
+
+  const login = (username, password) => {
+    const u = users.find(x => x.username === username && x.password === password);
+    if (u) { setUser(u); setPage("dashboard"); return true; }
+    return false;
+  };
+
+  const updateUserPassword = (userId, newPassword) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, password: newPassword } : u));
+  };
+
+  const logout = () => { setUser(null); setPage("dashboard"); };
+
+  const updateSchoolProfile = (id, updates) => {
+    setSchools(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const updateData = (schoolId, field, value) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], [field]: value }
+    }));
+  };
+
+  const submitData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "submitted", submittedAt: new Date().toISOString() }
+    }));
+  };
+
+  const approveData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "approved" }
+    }));
+  };
+
+  const lockData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "locked", lockedAt: new Date().toISOString() }
+    }));
+  };
+
+  const unlockData = (schoolId) => {
+    setSchoolData(prev => ({
+      ...prev,
+      [schoolId]: { ...prev[schoolId], status: "approved", lockedAt: null }
+    }));
+  };
+
+  const addSchool = (school) => {
+    const id = schools.length + 1;
+    setSchools(prev => [...prev, { ...school, id }]);
+    setSchoolData(prev => ({ ...prev, [id]: makeSchoolData(id) }));
+  };
+
+  const deleteSchool = (id) => {
+    if (!window.confirm("ഈ സ്കൂൾ നീക്കം ചെയ്യണോ?")) return;
+    setSchools(prev => prev.filter(s => s.id !== id));
+    setSchoolData(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  if (!user) return <LoginScreen onLogin={login} />;
+
+  const mySchoolId = user.role === "school" ? user.schoolId : (selectedSchoolId || schools[0]?.id);
+  const mySchool = schools.find(s => s.id === mySchoolId);
+  const myData = schoolData[mySchoolId] || makeSchoolData(mySchoolId);
+  const isLocked = myData.status === "locked";
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className="app-shell">
+        <Sidebar user={user} page={page} setPage={setPage} sidebarOpen={sidebarOpen} onLogout={logout} onToggle={() => setSidebarOpen(o => !o)} />
+        <div className={`main-content ${sidebarOpen ? "" : "full"}`}>
+          <div className="district-banner">
+            <span className="banner-om">ॐ</span>
+            <div className="banner-text">
+              <h2>Bharatheeya Vidya Niketan – Kollam District</h2>
+              <p>School Information Management System</p>
+            </div>
+            <span className="banner-year">2026–27</span>
+          </div>
+          <Topbar title={pageTitle(page)} onToggle={() => setSidebarOpen(o => !o)} user={user} />
+          <div className="page">
+            {page === "dashboard" && (
+              user.role === "admin"
+                ? <AdminDashboard schools={schools} schoolData={schoolData} />
+                : <SchoolDashboard school={mySchool} data={myData} />
+            )}
+            {page === "schools" && user.role === "admin" && (
+              <SchoolsPage schools={schools} schoolData={schoolData}
+                onSelect={(id) => { setSelectedSchoolId(id); setPage("data-entry"); }}
+                onAdd={addSchool}
+                onDelete={deleteSchool}
+                onApprove={approveData} onLock={lockData} onUnlock={unlockData}
+              />
+            )}
+            {/* School users blocked from district pages */}
+            {page === "schools" && user.role === "school" && (
+              <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>
+            )}
+            {page === "users" && user.role === "school" && (
+              <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>
+            )}
+            {page === "profile" && (
+              <ProfilePage school={mySchool} onSave={(u) => updateSchoolProfile(mySchoolId, u)} readOnly={user.role === "school" ? isLocked : false} />
+            )}
+            {page === "data-entry" && (
+              <DataEntryPage
+                school={mySchool} data={myData}
+                onUpdate={(f, v) => updateData(mySchoolId, f, v)}
+                onSubmit={() => submitData(mySchoolId)}
+                locked={isLocked}
+                tab={dataTab} setTab={setDataTab}
+              />
+            )}
+            {page === "reports" && (
+              <ReportsPage
+                schools={user.role === "school" ? schools.filter(s => s.id === user.schoolId) : schools}
+                schoolData={schoolData}
+                selectedId={user.role === "school" ? user.schoolId : null}
+                isSchoolUser={user.role === "school"}
+              />
+            )}
+            {page === "users" && user.role === "admin" && (
+              <UsersPage schools={schools} users={users} onUpdatePassword={updateUserPassword} />
+            )}
+            {page === "teachers" && user.role === "school" && (
+              <TeachersPage data={myData} subjects={subjects}
+                onUpdate={(f,v) => updateData(mySchoolId, f, v)} />
+            )}
+            {page === "samithi" && user.role === "school" && (
+              <SamithiPage data={myData}
+                onUpdate={(f,v) => updateData(mySchoolId, f, v)} />
+            )}
+            {page === "subjects" && user.role === "admin" && (
+              <SubjectsPage subjects={subjects} onSave={(s) => setSubjects(s)} />
+            )}
+            {page === "teacher-reports" && user.role === "admin" && (
+              <TeacherReportsPage schools={schools} schoolData={schoolData} subjects={subjects} />
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Login ────────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 400));
+    if (!onLogin(username, password)) setError("Invalid username or password.");
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className="login-screen">
+        <div className="login-card">
+          <div className="login-brand">
+            <div className="login-om">🪔</div>
+            <h1>Bharatheeya Vidya Niketan<br/>Kollam District</h1>
+            <p>School Information Management System · 2026–27</p>
+          </div>
+          <div className="login-form">
+            {error && <div className="alert alert-danger">⚠️ {error}</div>}
+            <div className="form-group">
+              <label>Username</label>
+              <input className="form-control" value={username} onChange={e => { setUsername(e.target.value); setError(""); }} placeholder="admin or bvn001" />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" className="form-control" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
+            </div>
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handle} disabled={loading}>
+              {loading ? "Signing in…" : "Sign In →"}
+            </button>
+            <div className="login-hint">
+              <strong>Demo credentials:</strong><br/>
+              Admin: <code>admin</code> / <code>admin123</code><br/>
+              School: <code>bvn001</code> – <code>bvn009</code> / <code>school123</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────
+function Sidebar({ user, page, setPage, sidebarOpen, onLogout, onToggle }) {
+  const adminNav = [
+    { key: "dashboard", icon: "📊", label: "Dashboard" },
+    { key: "schools", icon: "🏫", label: "Schools" },
+    { key: "reports", icon: "📄", label: "Reports" },
+    { key: "teacher-reports", icon: "👨‍🏫", label: "Teacher Reports" },
+    { key: "users", icon: "👥", label: "Users" },
+    { key: "subjects", icon: "📚", label: "Subjects" },
+  ];
+  const schoolNav = [
+    { key: "dashboard", icon: "📊", label: "My Dashboard" },
+    { key: "profile", icon: "🏫", label: "School Profile" },
+    { key: "data-entry", icon: "✏️", label: "Data Entry" },
+    { key: "teachers", icon: "👨‍🏫", label: "അധ്യാപകർ" },
+    { key: "samithi", icon: "🤝", label: "സമിതി" },
+    { key: "reports", icon: "📄", label: "My Report" },
+  ];
+  const nav = user.role === "admin" ? adminNav : schoolNav;
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+  const handleNav = (key) => { setPage(key); if (isMobile && onToggle) onToggle(); };
+
+  return (
+    <>
+      {sidebarOpen && isMobile && (
+        <div className="mobile-overlay" onClick={onToggle} />
+      )}
+      <div className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">ॐ</div>
+          <div className="sidebar-brand">
+            <h2>BVN Kollam</h2>
+            <p>SIMS 2026–27</p>
+          </div>
+        </div>
+        <nav className="sidebar-nav">
+          <div className="nav-section">Main Menu</div>
+          {nav.map(n => (
+            <div key={n.key} className={`nav-item ${page === n.key ? "active" : ""}`} onClick={() => handleNav(n.key)}>
+              <span className="nav-icon">{n.icon}</span>
+              <span>{n.label}</span>
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="user-avatar">{user.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{user.role === "admin" ? "Administrator" : user.name.split(" ")[0]}</div>
+              <div className="role">{user.role === "admin" ? "District Admin" : "School User"}</div>
+            </div>
+          </div>
+          <button className="btn btn-outline btn-sm" style={{ width: "100%", justifyContent: "center", marginTop: 12 }} onClick={onLogout}>
+            🚪 <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Topbar ───────────────────────────────────────────────────────────────
+function Topbar({ title, onToggle, user }) {
+  return (
+    <div className="topbar">
+      <button className="btn-icon" onClick={onToggle}>☰</button>
+      <div className="topbar-title">{title}</div>
+      <span className="topbar-badge">{user.role === "admin" ? "Admin" : "School"}</span>
+    </div>
+  );
+}
+
+function pageTitle(p) {
+  const m = {
+    dashboard: "Dashboard", schools: "Schools", profile: "School Profile",
+    "data-entry": "Data Entry", reports: "Reports", users: "Users",
+    teachers: "അധ്യാപകർ", samithi: "സമിതി അംഗങ്ങൾ",
+    "teacher-reports": "Teacher Reports", subjects: "Subjects",
+  };
+  return m[p] || p;
+}
+
+// ─── Admin Dashboard ──────────────────────────────────────────────────────
+function AdminDashboard({ schools, schoolData }) {
+  const allData = Object.values(schoolData);
+  const totalStudents = allData.reduce((s, d) => s + sumStrength(d.strength).total, 0);
+  const totalBoys = allData.reduce((s, d) => s + sumStrength(d.strength).boys, 0);
+  const totalGirls = allData.reduce((s, d) => s + sumStrength(d.strength).girls, 0);
+  const totalTeachers = allData.reduce((s, d) => s + Number(d.staff.maleteachers || 0) + Number(d.staff.femaleteachers || 0), 0);
+  const totalNT = allData.reduce((s, d) => s + Number(d.staff.officestaff || 0) + Number(d.staff.ayah || 0) + Number(d.staff.librarian || 0) + Number(d.staff.accountant || 0) + Number(d.staff.otherstaff || 0), 0);
+  const totalAdmissions = allData.reduce((s, d) => {
+    let t = 0; CLASSES.forEach(c => { t += Number(d.admissions[c]?.boys || 0) + Number(d.admissions[c]?.girls || 0); });
+    return s + t;
+  }, 0);
+  const totalSC = allData.reduce((s, d) => s + Number(d.community.SC || 0), 0);
+  const totalST = allData.reduce((s, d) => s + Number(d.community.ST || 0), 0);
+  const totalOBC = allData.reduce((s, d) => s + Number(d.community.OBC || 0), 0);
+  const totalOEC = allData.reduce((s, d) => s + Number(d.community.OEC || 0), 0);
+  const totalGeneral = allData.reduce((s, d) => s + Number(d.community.General || 0), 0);
+
+  const submitted = allData.filter(d => ["submitted","approved","locked"].includes(d.status)).length;
+
+  const schoolStrengths = schools.map(s => ({ name: s.name.split(" ").slice(0, 3).join(" "), val: sumStrength(schoolData[s.id]?.strength || makeStudentStrength()).total }));
+  const maxVal = Math.max(...schoolStrengths.map(x => x.val), 1);
+
+  return (
+    <>
+      <div className="alert alert-info">
+        📌 <strong>{submitted} of {schools.length} schools</strong> have submitted data for 2026–27.
+      </div>
+
+      {/* Local Body Summary Stats */}
+      <LocalBodySummaryCards schools={schools} schoolData={schoolData} />
+
+      <div className="stats-grid">
+        <StatCard icon="🏫" color="orange" label="Total Schools" value={fmtNum(schools.length)} />
+        <StatCard icon="👨‍🎓" color="blue" label="Total Students" value={fmtNum(totalStudents)} sub={`${fmtNum(totalBoys)} Boys · ${fmtNum(totalGirls)} Girls`} />
+        <StatCard icon="👦" color="blue" label="Total Boys" value={fmtNum(totalBoys)} />
+        <StatCard icon="👧" color="purple" label="Total Girls" value={fmtNum(totalGirls)} />
+        <StatCard icon="👩‍🏫" color="green" label="Total Teachers" value={fmtNum(totalTeachers)} />
+        <StatCard icon="👷" color="amber" label="Non-Teaching Staff" value={fmtNum(totalNT)} />
+        <StatCard icon="🆕" color="orange" label="New Admissions" value={fmtNum(totalAdmissions)} />
+        <StatCard icon="📋" color="green" label="SC Students" value={fmtNum(totalSC)} />
+        <StatCard icon="🌿" color="green" label="ST Students" value={fmtNum(totalST)} />
+        <StatCard icon="🔵" color="blue" label="OBC Students" value={fmtNum(totalOBC)} />
+        <StatCard icon="🟡" color="amber" label="OEC Students" value={fmtNum(totalOEC)} />
+        <StatCard icon="⚪" color="red" label="General Students" value={fmtNum(totalGeneral)} />
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title"><span className="icon">📊</span>School-wise Student Strength</div>
+          <div className="bar-chart">
+            {schoolStrengths.map((s, i) => (
+              <div className="bar-row" key={i}>
+                <div className="bar-label" title={s.name}>{s.name}</div>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${(s.val / maxVal) * 100}%` }}>
+                    {s.val > 0 && <span>{s.val}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title"><span className="icon">📝</span>Submission Status</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>School</th><th>Status</th><th>Students</th></tr></thead>
+              <tbody>
+                {schools.map(s => {
+                  const d = schoolData[s.id];
+                  return (
+                    <tr key={s.id}>
+                      <td style={{ fontSize: 13 }}>{s.name.split(" ").slice(0, 4).join(" ")}</td>
+                      <td><StatusBadge status={d?.status || "draft"} /></td>
+                      <td><strong>{fmtNum(sumStrength(d?.strength || makeStudentStrength()).total)}</strong></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }} className="card">
+        <div className="card-title"><span className="icon">🏛️</span>Taluk-wise Summary</div>
+        <TalukSummary schools={schools} schoolData={schoolData} />
+      </div>
+    </>
+  );
+}
+
+function LocalBodySummaryCards({ schools, schoolData }) {
+  const types = ["Grama Panchayat", "Municipality", "Corporation"];
+  const summary = types.map(type => {
+    const typeSchools = schools.filter(s => (s.localBodyType || "Grama Panchayat") === type);
+    const uniqueBodies = [...new Set(typeSchools.map(s => s.localBody).filter(Boolean))];
+    const students = typeSchools.reduce((a, s) => a + sumStrength(schoolData[s.id]?.strength || makeStudentStrength()).total, 0);
+    const taluks = [...new Set(typeSchools.map(s => s.taluk).filter(Boolean))];
+    return { type, count: typeSchools.length, bodies: uniqueBodies, students, taluks };
+  });
+
+  const icons = { "Grama Panchayat": "🌾", "Municipality": "🏘️", "Corporation": "🏙️" };
+  const colors = { "Grama Panchayat": COLORS.secondary, "Municipality": "#1D4ED8", "Corporation": "#7C3AED" };
+  const bgColors = { "Grama Panchayat": "rgba(26,107,58,0.08)", "Municipality": "rgba(29,78,216,0.08)", "Corporation": "rgba(124,58,237,0.08)" };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
+      {summary.map(s => (
+        <div key={s.type} style={{ background: "#fff", border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 18, borderTop: `4px solid ${colors[s.type]}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 24 }}>{icons[s.type]}</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: colors[s.type] }}>{s.type}</div>
+              <div style={{ fontSize: 12, color: COLORS.textMuted }}>{s.bodies.length} local bodies · {s.count} schools</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+            <div style={{ background: bgColors[s.type], borderRadius: 8, padding: "6px 12px", flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: COLORS.textMuted }}>Schools</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: colors[s.type] }}>{s.count}</div>
+            </div>
+            <div style={{ background: bgColors[s.type], borderRadius: 8, padding: "6px 12px", flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: COLORS.textMuted }}>Students</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: colors[s.type] }}>{fmtNum(s.students)}</div>
+            </div>
+          </div>
+          {s.bodies.length > 0 && (
+            <div style={{ fontSize: 12, color: COLORS.textMuted }}>
+              <strong style={{ color: COLORS.text }}>Local Bodies: </strong>
+              {s.bodies.join(" · ")}
+            </div>
+          )}
+          {s.taluks.length > 0 && (
+            <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+              <strong style={{ color: COLORS.text }}>Taluks: </strong>
+              {s.taluks.join(", ")}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── TalukSummary ─────────────────────────────────────────────────────────
+function TalukSummary({ schools, schoolData }) {
+  const taluks = {};
+  schools.forEach(s => {
+    const t = s.taluk || "Unknown";
+    if (!taluks[t]) taluks[t] = { schools: 0, students: 0, boys: 0, girls: 0 };
+    taluks[t].schools++;
+    const st = sumStrength(schoolData[s.id]?.strength || makeStudentStrength());
+    taluks[t].students += st.total;
+    taluks[t].boys += st.boys;
+    taluks[t].girls += st.girls;
+  });
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead><tr><th>Taluk</th><th>Schools</th><th>Boys</th><th>Girls</th><th>Total Students</th></tr></thead>
+        <tbody>
+          {Object.entries(taluks).map(([t, v]) => (
+            <tr key={t}>
+              <td><strong>{t}</strong></td>
+              <td>{v.schools}</td>
+              <td>{fmtNum(v.boys)}</td>
+              <td>{fmtNum(v.girls)}</td>
+              <td><strong>{fmtNum(v.students)}</strong></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── School Dashboard ─────────────────────────────────────────────────────
+function SchoolDashboard({ school, data }) {
+  if (!school) return <div className="alert alert-warning">⚠️ School not found.</div>;
+  const st = sumStrength(data.strength);
+  const totalTeachers = Number(data.staff.maleteachers || 0) + Number(data.staff.femaleteachers || 0);
+  const prev = Number(data.prevYearTotal || 0);
+  const diff = st.total - prev;
+  const growthPct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : 0;
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏫</div>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>{school.name}</h2>
+            <p style={{ fontSize: 13, color: COLORS.textMuted }}>{school.code} · {school.level} · {school.place}</p>
+          </div>
+          <div style={{ marginLeft: "auto" }}><StatusBadge status={data.status} /></div>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="👨‍🎓" color="blue" label="Total Students" value={fmtNum(st.total)} sub={`${fmtNum(st.boys)} B · ${fmtNum(st.girls)} G`} />
+        <StatCard icon="👩‍🏫" color="green" label="Total Teachers" value={fmtNum(totalTeachers)} />
+        <StatCard icon="📈" color={diff >= 0 ? "green" : "red"} label="Growth vs Last Year" value={`${diff >= 0 ? "+" : ""}${fmtNum(diff)}`} sub={`${growthPct}% vs 2025-26`} />
+        <StatCard icon="📝" color="orange" label="Submission Status" value={data.status.charAt(0).toUpperCase() + data.status.slice(1)} />
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">📊 Community Distribution</div>
+          {["SC", "ST", "OBC", "OEC", "General"].map((c, i) => {
+            const v = Number(data.community[c] || 0);
+            const pct = st.total > 0 ? Math.round((v / st.total) * 100) : 0;
+            const colors = ["orange","green","blue","amber","red"];
+            return (
+              <div className="bar-row" key={c} style={{ marginBottom: 8 }}>
+                <div className="bar-label">{c}</div>
+                <div className="bar-track">
+                  <div className={`bar-fill ${colors[i % colors.length]}`} style={{ width: `${pct}%`, background: [COLORS.primary, COLORS.secondary, "#2563EB", COLORS.accent, "#9333EA"][i] }}>
+                    {pct > 5 && <span>{pct}%</span>}
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, color: COLORS.textMuted, width: 32, textAlign: "right" }}>{v}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="card">
+          <div className="card-title">🏷️ School Details</div>
+          <table style={{ width: "100%", fontSize: 13 }}>
+            <tbody>
+              {[["Local Body Type", school.localBodyType || "Grama Panchayat"],["Local Body", school.localBody || school.panchayat || "—"],["Taluk", school.taluk],["Headmaster", school.headmaster],["Establishment", school.estYear],["UDISE", school.udise || "—"],["Email", school.email || "—"]].map(([k, v]) => (
+                <tr key={k}><td style={{ color: COLORS.textMuted, padding: "6px 0", width: 130 }}>{k}</td><td style={{ fontWeight: 500 }}>{v}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Schools Page (Admin) ─────────────────────────────────────────────────
+function SchoolsPage({ schools, schoolData, onSelect, onAdd, onDelete, onApprove, onLock, onUnlock }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [newSchool, setNewSchool] = useState({ name: "", code: "", level: "LP", localBodyType: "Grama Panchayat", localBody: "", taluk: "Kollam", place: "", headmaster: "", estYear: "" });
+
+  const handleAdd = () => {
+    if (!newSchool.name || !newSchool.code) return;
+    onAdd({ ...newSchool, phone: "", email: "", udise: "", hm_mobile: "", building: "", po: "", village: "", district: "Kollam", pin: "", logo: null });
+    setShowAdd(false);
+    setNewSchool({ name: "", code: "", level: "LP", localBodyType: "Grama Panchayat", localBody: "", taluk: "Kollam", place: "", headmaster: "", estYear: "" });
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700 }}>All Schools</h2>
+          <p style={{ fontSize: 13, color: COLORS.textMuted }}>{schools.length} schools registered</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Add School</button>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>School Name</th><th>Code</th><th>Level</th><th>Local Body</th><th>Taluk</th>
+              <th>Students</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {schools.map((s, i) => {
+              const d = schoolData[s.id];
+              const st = sumStrength(d?.strength || makeStudentStrength());
+              const lbColor = s.localBodyType === "Corporation" ? "#7C3AED" : s.localBodyType === "Municipality" ? "#1D4ED8" : COLORS.secondary;
+              return (
+                <tr key={s.id}>
+                  <td>{i + 1}</td>
+                  <td><strong style={{ fontSize: 13 }}>{s.name}</strong><br /><span style={{ fontSize: 11, color: COLORS.textMuted }}>{s.headmaster}</span></td>
+                  <td><code style={{ fontSize: 12, background: COLORS.bg, padding: "2px 6px", borderRadius: 4 }}>{s.code}</code></td>
+                  <td style={{ fontSize: 13 }}>{s.level}</td>
+                  <td>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: lbColor }}>{s.localBodyType === "Corporation" ? "🏙️" : s.localBodyType === "Municipality" ? "🏘️" : "🌾"} {s.localBody}</span>
+                    <br/><span style={{ fontSize: 11, color: COLORS.textMuted }}>{s.localBodyType}</span>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{s.taluk}</td>
+                  <td><strong>{fmtNum(st.total)}</strong></td>
+                  <td><StatusBadge status={d?.status || "draft"} /></td>
+                  <td>
+                    <div className="btn-group" style={{ flexWrap: "wrap", gap: 4 }}>
+                      <button className="btn btn-outline btn-sm" onClick={() => onSelect(s.id)}>✏️ Edit Data</button>
+                      {d?.status === "submitted" && <button className="btn btn-secondary btn-sm" onClick={() => onApprove(s.id)}>✅ Approve</button>}
+                      {d?.status === "approved" && <button className="btn btn-outline btn-sm" onClick={() => onLock(s.id)}>🔒 Lock</button>}
+                      {d?.status === "locked" && <button className="btn btn-outline btn-sm" onClick={() => onUnlock(s.id)}>🔓 Unlock</button>}
+                      <button className="btn btn-secondary btn-sm" style={{background:"#6D28D9"}} onClick={() => printSamithiReport([s], schoolData)} title="ഈ സ്കൂളിന്റെ സമിതി PDF">🤝 സമിതി</button>
+                      <button className="btn btn-secondary btn-sm" style={{background:"#0369A1"}} onClick={() => printAllTeachersReport([s], schoolData)} title="ഈ സ്കൂളിന്റെ Teachers PDF">👨‍🏫 Teachers</button>
+                      <button className="btn btn-secondary btn-sm" style={{background:"#1A6B3A"}} onClick={() => printSchoolReport(s, schoolData[s.id])} title="ഈ സ്കൂളിന്റെ Full Report PDF">📄 Full Report</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => onDelete(s.id)}>🗑️ Remove</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {showAdd && (
+        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>➕ Add New School</h3>
+            <div className="form-grid">
+              {[["name","School Name"],["code","School Code"],["place","Place"],["headmaster","Headmaster Name"],["estYear","Establishment Year"]].map(([k, label]) => (
+                <div className="form-group" key={k}>
+                  <label>{label}</label>
+                  <input className="form-control" value={newSchool[k]} onChange={e => setNewSchool(p => ({ ...p, [k]: e.target.value }))} />
+                </div>
+              ))}
+              <div className="form-group">
+                <label>Local Body Type</label>
+                <select className="form-control" value={newSchool.localBodyType} onChange={e => setNewSchool(p => ({ ...p, localBodyType: e.target.value, localBody: "" }))}>
+                  <option>Grama Panchayat</option>
+                  <option>Municipality</option>
+                  <option>Corporation</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{newSchool.localBodyType} Name</label>
+                <select className="form-control" value={newSchool.localBody} onChange={e => setNewSchool(p => ({ ...p, localBody: e.target.value }))}>
+                  <option value="">-- Select --</option>
+                  {(KOLLAM_LOCAL_BODIES[newSchool.localBodyType] || []).map(lb => <option key={lb} value={lb}>{lb}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Taluk</label>
+                <select className="form-control" value={newSchool.taluk} onChange={e => setNewSchool(p => ({ ...p, taluk: e.target.value }))}>
+                  {KOLLAM_TALUKS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>School Level</label>
+                <select className="form-control" value={newSchool.level} onChange={e => setNewSchool(p => ({ ...p, level: e.target.value }))}>
+                  {["LP","UP","HS","LP + UP","UP + HS","LP + UP + HS"].map(l => <option key={l}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="btn-group" style={{ marginTop: 20 }}>
+              <button className="btn btn-primary" onClick={handleAdd}>Add School</button>
+              <button className="btn btn-outline" onClick={() => setShowAdd(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Profile Page ─────────────────────────────────────────────────────────
+function ProfilePage({ school, onSave, readOnly }) {
+  const [form, setForm] = useState(school || {});
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { setForm(school || {}); }, [school]);
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const save = () => { onSave(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+
+  if (!school) return <div className="alert alert-warning">School not found.</div>;
+
+  return (
+    <>
+      {saved && <div className="alert alert-success">✅ Profile saved successfully!</div>}
+      {readOnly && <div className="alert alert-warning">🔒 Data is locked. Contact district admin to make changes.</div>}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">🏫 School Information</div>
+        <div className="form-grid">
+          <div className="form-group"><label>School Name</label><input className="form-control" value={form.name || ""} onChange={e => set("name", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>School Code</label><input className="form-control" value={form.code || ""} disabled /></div>
+          <div className="form-group"><label>School Level</label>
+            <select className="form-control" value={form.level || ""} onChange={e => set("level", e.target.value)} disabled={readOnly}>
+              {["LP","UP","HS","LP + UP","UP + HS","LP + UP + HS"].map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label>Establishment Year</label><input className="form-control" value={form.estYear || ""} onChange={e => set("estYear", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Phone</label><input className="form-control" value={form.phone || ""} onChange={e => set("phone", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Email</label><input className="form-control" type="email" value={form.email || ""} onChange={e => set("email", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Website</label><input className="form-control" value={form.website || ""} onChange={e => set("website", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>UDISE Number</label><input className="form-control" value={form.udise || ""} onChange={e => set("udise", e.target.value)} disabled={readOnly} /></div>
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">📍 Address Information</div>
+        <div className="form-grid">
+          {[["building","Building Name"],["place","Place"],["po","Post Office"],["village","Village"]].map(([k, label]) => (
+            <div className="form-group" key={k}>
+              <label>{label}</label>
+              <input className="form-control" value={form[k] || ""} onChange={e => set(k, e.target.value)} disabled={readOnly} />
+            </div>
+          ))}
+          {/* Local Body Type selector */}
+          <div className="form-group">
+            <label>Local Body Type</label>
+            <select className="form-control" value={form.localBodyType || "Grama Panchayat"} onChange={e => { set("localBodyType", e.target.value); set("localBody", ""); }} disabled={readOnly}>
+              <option>Grama Panchayat</option>
+              <option>Municipality</option>
+              <option>Corporation</option>
+            </select>
+          </div>
+          {/* Dynamic local body name based on type */}
+          <div className="form-group">
+            <label>{form.localBodyType || "Grama Panchayat"} Name</label>
+            {readOnly
+              ? <input className="form-control" value={form.localBody || ""} disabled />
+              : <select className="form-control" value={form.localBody || ""} onChange={e => set("localBody", e.target.value)}>
+                  <option value="">-- Select --</option>
+                  {(KOLLAM_LOCAL_BODIES[form.localBodyType || "Grama Panchayat"] || []).map(lb => (
+                    <option key={lb} value={lb}>{lb}</option>
+                  ))}
+                </select>
+            }
+          </div>
+          <div className="form-group">
+            <label>Taluk</label>
+            <select className="form-control" value={form.taluk || ""} onChange={e => set("taluk", e.target.value)} disabled={readOnly}>
+              <option value="">-- Select Taluk --</option>
+              {KOLLAM_TALUKS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          {[["district","District"],["pin","PIN Code"]].map(([k, label]) => (
+            <div className="form-group" key={k}>
+              <label>{label}</label>
+              <input className="form-control" value={form[k] || ""} onChange={e => set(k, e.target.value)} disabled={readOnly} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">👤 Headmaster / Principal</div>
+        <div className="form-grid">
+          <div className="form-group"><label>Name</label><input className="form-control" value={form.headmaster || ""} onChange={e => set("headmaster", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Mobile</label><input className="form-control" value={form.hm_mobile || ""} onChange={e => set("hm_mobile", e.target.value)} disabled={readOnly} /></div>
+          <div className="form-group"><label>Email</label><input className="form-control" value={form.hm_email || ""} onChange={e => set("hm_email", e.target.value)} disabled={readOnly} /></div>
+        </div>
+      </div>
+      {!readOnly && (
+        <button className="btn btn-primary" onClick={save}>💾 Save Profile</button>
+      )}
+    </>
+  );
+}
+
+// ─── Data Entry ───────────────────────────────────────────────────────────
+function DataEntryPage({ school, data, onUpdate, onSubmit, locked, tab, setTab }) {
+  const [saveMsg, setSaveMsg] = useState("");
+  if (!school) return <div className="alert alert-warning">School not found.</div>;
+
+  const st = sumStrength(data.strength);
+  const communityTotal = Object.values(data.community).reduce((a, v) => a + Number(v || 0), 0);
+  const communityMatch = communityTotal === st.total;
+
+  const handleUpdate = (field, value) => {
+    onUpdate(field, value);
+    setSaveMsg("✅ ഡേറ്റ സേവ് ആയി!");
+    setTimeout(() => setSaveMsg(""), 2500);
+  };
+
+  const handleSubmit = () => {
+    if (!communityMatch && st.total > 0) { alert("Community total does not match student strength!"); return; }
+    if (window.confirm("Submit data for 2026–27? You cannot edit after submission.")) onSubmit();
+  };
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 17, fontWeight: 700 }}>{school.name}</h2>
+          <p style={{ fontSize: 13, color: COLORS.textMuted }}>Academic Year: 2026–27 · {school.code}</p>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          <StatusBadge status={data.status} />
+          {!locked && data.status !== "submitted" && data.status !== "approved" && (
+            <button className="btn btn-primary" onClick={handleSubmit}>📤 Submit Data</button>
+          )}
+          {locked && <span style={{ fontSize: 13, color: COLORS.textMuted }}>🔒 Locked</span>}
+        </div>
+      </div>
+
+      {locked && <div className="alert alert-info">🔒 This data has been locked by the District Administrator. Contact admin for changes.</div>}
+
+      <div className="tabs">
+        {[["strength","📚 Student Strength"],["community","🏷️ Community"],["admissions","🆕 Admissions"],["staff","👩‍🏫 Staff"],["growth","📈 Growth"]].map(([k, label]) => (
+          <div key={k} className={`tab ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{label}</div>
+        ))}
+      </div>
+
+      {saveMsg && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, background: "#166534", color: "#fff", padding: "12px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, zIndex: 999, boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}>
+          {saveMsg}
+        </div>
+      )}
+      <div className={locked ? "submitted-overlay" : ""}>
+        {tab === "strength" && <StrengthTab strength={data.strength} onUpdate={s => handleUpdate("strength", s)} />}
+        {tab === "community" && <CommunityTab community={data.community} total={st.total} onUpdate={c => handleUpdate("community", c)} />}
+        {tab === "admissions" && <AdmissionsTab admissions={data.admissions} onUpdate={a => handleUpdate("admissions", a)} />}
+        {tab === "staff" && <StaffTab staff={data.staff} onUpdate={s => handleUpdate("staff", s)} />}
+        {tab === "growth" && <GrowthTab current={st.total} prev={data.prevYearTotal} prevNewAdmissions={data.prevYearNewAdmissions} onUpdate={(field, val) => handleUpdate(field, val)} />}
+      </div>
+    </>
+  );
+}
+
+function StrengthTab({ strength, onUpdate }) {
+  const set = (cls, gender, val) => {
+    onUpdate({ ...strength, [cls]: { ...strength[cls], [gender]: Number(val) || 0 } });
+  };
+  const st = sumStrength(strength);
+
+  return (
+    <div className="card">
+      <div className="card-title">📚 Class-wise Student Strength</div>
+      <div className="table-wrap">
+        <table className="class-strength-table">
+          <thead>
+            <tr><th>Class</th><th>Boys</th><th>Girls</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            {CLASSES.map(c => {
+              const b = Number(strength[c]?.boys || 0), g = Number(strength[c]?.girls || 0);
+              return (
+                <tr key={c}>
+                  <td><strong style={{ color: COLORS.text, fontSize: 14 }}>{c}</strong></td>
+                  <td><input type="number" min="0" className="num-input" value={b || ""} onChange={e => set(c, "boys", e.target.value)} placeholder="0" /></td>
+                  <td><input type="number" min="0" className="num-input" value={g || ""} onChange={e => set(c, "girls", e.target.value)} placeholder="0" /></td>
+                  <td><strong style={{ color: b + g > 0 ? COLORS.secondary : COLORS.textMuted }}>{b + g}</strong></td>
+                </tr>
+              );
+            })}
+            <tr className="total-row">
+              <td><strong style={{ color: COLORS.secondary }}>TOTAL</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(st.boys)}</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(st.girls)}</strong></td>
+              <td><strong style={{ color: COLORS.primary, fontSize: 16 }}>{fmtNum(st.total)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CommunityTab({ community, total, onUpdate }) {
+  const set = (k, v) => onUpdate({ ...community, [k]: Number(v) || 0 });
+  const catTotal = Object.values(community).reduce((a, v) => a + Number(v || 0), 0);
+  const diff = total - catTotal;
+  const ok = diff === 0 || total === 0;
+
+  return (
+    <div className="card">
+      <div className="card-title">🏷️ Community / Category</div>
+      {!ok && <div className="alert alert-warning">⚠️ Category total ({fmtNum(catTotal)}) differs from student strength ({fmtNum(total)}) by {Math.abs(diff)}</div>}
+      {ok && total > 0 && <div className="alert alert-success">✅ Category total matches student strength.</div>}
+      <div className="form-grid">
+        {["SC","ST","OBC","OEC","General"].map(c => (
+          <div className="form-group" key={c}>
+            <label>{c}</label>
+            <input type="number" min="0" className="form-control" value={community[c] || ""} onChange={e => set(c, e.target.value)} placeholder="0" />
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 16, padding: "12px 16px", background: COLORS.bg, borderRadius: 8, display: "flex", gap: 16 }}>
+        <span style={{ fontSize: 14 }}>Category Total: <strong>{fmtNum(catTotal)}</strong></span>
+        <span style={{ fontSize: 14 }}>Student Strength: <strong>{fmtNum(total)}</strong></span>
+        <span style={{ fontSize: 14, color: ok ? COLORS.success : COLORS.danger, fontWeight: 600 }}>{ok ? "✓ Match" : `✗ Difference: ${Math.abs(diff)}`}</span>
+      </div>
+    </div>
+  );
+}
+
+function AdmissionsTab({ admissions, onUpdate }) {
+  const set = (cls, gender, val) => {
+    onUpdate({ ...admissions, [cls]: { ...admissions[cls], [gender]: Number(val) || 0 } });
+  };
+  let totalB = 0, totalG = 0;
+  CLASSES.forEach(c => { totalB += Number(admissions[c]?.boys || 0); totalG += Number(admissions[c]?.girls || 0); });
+
+  return (
+    <div className="card">
+      <div className="card-title">🆕 New Admissions 2026–27</div>
+      <div className="table-wrap">
+        <table className="class-strength-table">
+          <thead><tr><th>Class</th><th>New Boys</th><th>New Girls</th><th>Total</th></tr></thead>
+          <tbody>
+            {CLASSES.map(c => {
+              const b = Number(admissions[c]?.boys || 0), g = Number(admissions[c]?.girls || 0);
+              return (
+                <tr key={c}>
+                  <td><strong style={{ color: COLORS.text, fontSize: 14 }}>{c}</strong></td>
+                  <td><input type="number" min="0" className="num-input" value={b || ""} onChange={e => set(c, "boys", e.target.value)} placeholder="0" /></td>
+                  <td><input type="number" min="0" className="num-input" value={g || ""} onChange={e => set(c, "girls", e.target.value)} placeholder="0" /></td>
+                  <td><strong style={{ color: b + g > 0 ? COLORS.secondary : COLORS.textMuted }}>{b + g}</strong></td>
+                </tr>
+              );
+            })}
+            <tr className="total-row">
+              <td>TOTAL ADMISSIONS</td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(totalB)}</strong></td>
+              <td><strong style={{ color: COLORS.primary }}>{fmtNum(totalG)}</strong></td>
+              <td><strong style={{ color: COLORS.primary, fontSize: 16 }}>{fmtNum(totalB + totalG)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function StaffTab({ staff, onUpdate }) {
+  const set = (k, v) => onUpdate({ ...staff, [k]: Number(v) || 0 });
+  const totalT = Number(staff.maleteachers || 0) + Number(staff.femaleteachers || 0);
+  const trainedTotal = Number(staff.trained || 0) + Number(staff.untrained || 0);
+  const trainedOk = trainedTotal === totalT || totalT === 0;
+  const totalNT = Number(staff.officestaff || 0) + Number(staff.otherstaff || 0) + Number(staff.busstaff || 0) + Number(staff.ayah || 0);
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title">👩‍🏫 Teaching Staff</div>
+        <div className="form-grid">
+          <div className="form-group"><label>Male Teachers</label><input type="number" min="0" className="form-control" value={staff.maleteachers || ""} onChange={e => set("maleteachers", e.target.value)} placeholder="0" /></div>
+          <div className="form-group"><label>Female Teachers</label><input type="number" min="0" className="form-control" value={staff.femaleteachers || ""} onChange={e => set("femaleteachers", e.target.value)} placeholder="0" /></div>
+        </div>
+        <div style={{ marginTop: 12, padding: "10px 14px", background: COLORS.bg, borderRadius: 8, fontSize: 14 }}>
+          Total Teachers: <strong style={{ color: COLORS.secondary }}>{fmtNum(totalT)}</strong>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title">🎓 Teacher Training Status</div>
+        {!trainedOk && <div className="alert alert-warning">⚠️ Trained + Untrained ({trainedTotal}) ≠ Total Teachers ({totalT})</div>}
+        <div className="form-grid">
+          <div className="form-group"><label>Trained Teachers</label><input type="number" min="0" className="form-control" value={staff.trained || ""} onChange={e => set("trained", e.target.value)} placeholder="0" /></div>
+          <div className="form-group"><label>Untrained Teachers</label><input type="number" min="0" className="form-control" value={staff.untrained || ""} onChange={e => set("untrained", e.target.value)} placeholder="0" /></div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">👷 Non-Teaching Staff</div>
+        <div className="form-grid">
+          {[["officestaff","Office Staff"],["otherstaff","Other Staff"],["busstaff","Bus Staff"],["ayah","Aaya"]].map(([k, label]) => (
+            <div className="form-group" key={k}><label>{label}</label><input type="number" min="0" className="form-control" value={staff[k] || ""} onChange={e => set(k, e.target.value)} placeholder="0" /></div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12, padding: "10px 14px", background: COLORS.bg, borderRadius: 8, fontSize: 14 }}>
+          Total Non-Teaching Staff: <strong style={{ color: COLORS.secondary }}>{fmtNum(totalNT)}</strong>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function GrowthTab({ current, prev, prevNewAdmissions, onUpdate }) {
+  const p = Number(prev || 0);
+  const pna = Number(prevNewAdmissions || 0);
+  const diff = current - p;
+  const growthPct = p > 0 ? ((diff / p) * 100).toFixed(2) : 0;
+  const isPositive = diff >= 0;
+
+  return (
+    <>
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card-title">📈 Year-over-Year Growth Analysis</div>
+      <div className="form-grid">
+        <div className="form-group">
+          <label>Previous Year (2025–26) Total Students</label>
+          <input type="number" min="0" className="form-control" value={prev || ""}
+            onChange={e => onUpdate("prevYearTotal", Number(e.target.value) || 0)}
+            placeholder="കഴിഞ്ഞ വർഷത്തെ ആകെ" />
+        </div>
+        <div className="form-group">
+          <label>Previous Year (2025–26) New Admissions</label>
+          <input type="number" min="0" className="form-control" value={prevNewAdmissions || ""}
+            onChange={e => onUpdate("prevYearNewAdmissions", Number(e.target.value) || 0)}
+            placeholder="കഴിഞ്ഞ വർഷത്തെ പ്രവേശനം" />
+        </div>
+      </div>
+      <div className="stats-grid" style={{ marginTop: 16 }}>
+        <div className="stat-card">
+          <div className="stat-icon blue">📅</div>
+          <div className="stat-body"><div className="label">Previous Year Total (2025–26)</div><div className="value">{fmtNum(p)}</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon orange">🆕</div>
+          <div className="stat-body"><div className="label">Prev Year New Admissions</div><div className="value">{fmtNum(pna)}</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon green">📅</div>
+          <div className="stat-body"><div className="label">Current Year (2026–27)</div><div className="value">{fmtNum(current)}</div></div>
+        </div>
+        <div className="stat-card">
+          <div className={`stat-icon ${isPositive ? "green" : "red"}`}>{isPositive ? "📈" : "📉"}</div>
+          <div className="stat-body">
+            <div className="label">Net Difference</div>
+            <div className="value" style={{ color: isPositive ? COLORS.success : COLORS.danger }}>{isPositive ? "+" : ""}{fmtNum(diff)}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className={`stat-icon ${isPositive ? "green" : "red"}`}>%</div>
+          <div className="stat-body">
+            <div className="label">Growth %</div>
+            <div className="value" style={{ color: isPositive ? COLORS.success : COLORS.danger }}>{isPositive ? "+" : ""}{growthPct}%</div>
+          </div>
+        </div>
+      </div>
+      {p > 0 && (
+        <div className={`alert ${isPositive ? "alert-success" : "alert-danger"}`} style={{ marginTop: 16 }}>
+          {isPositive ? "📈" : "📉"} {isPositive
+            ? `Student strength increased by ${fmtNum(diff)} (${growthPct}%) compared to last year.`
+            : `Student strength decreased by ${fmtNum(Math.abs(diff))} (${Math.abs(growthPct)}%) compared to last year.`}
+        </div>
+      )}
+    </div>
+    </>
+  );
+}
+
+// ─── Reports Page ─────────────────────────────────────────────────────────
+// ─── Print: All Schools Samithi PDF ──────────────────────────────────────
+function printSamithiReport(schools, schoolData) {
+  const win = window.open("", "_blank");
+  if (!win) { alert("Pop-up blocked!"); return; }
+  const roleColor = { "President":"#7C3AED","Vice President":"#2563EB","Secretary":"#D4500A","Joint Secretary":"#D97706","Treasurer":"#1A6B3A","Samithi Member":"#374151" };
+  const sections = schools.map((s, si) => {
+    const members = (schoolData[s.id]?.samithi || []);
+    if (members.length === 0) return `<div class="school-block"><h3>${si+1}. ${s.name}</h3><p style="color:#999;font-size:12px">സമിതി അംഗങ്ങളെ ചേർത്തിട്ടില്ല</p></div>`;
+    const rows = members.map((m,i) => `
+      <tr class="${i%2===0?"":"alt"}">
+        <td>${i+1}</td><td><b>${m.name}</b></td>
+        <td><span style="background:${roleColor[m.role]||"#374151"};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">${m.role||"—"}</span></td>
+        <td>${m.phone||"—"}</td><td>${m.address||"—"}</td>
+      </tr>`).join("");
+    return `<div class="school-block">
+      <h3>${si+1}. ${s.name} <span style="color:#666;font-size:12px;font-weight:400">(${s.code})</span></h3>
+      <table><thead><tr><th>#</th><th>പേര്</th><th>ചുമതല</th><th>ഫോൺ</th><th>മേൽവിലാസം</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }).join("");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+    <title>സമിതി അംഗങ്ങൾ – BVN Kollam 2026-27</title>
+    <style>body{font-family:"Noto Sans Malayalam","Segoe UI",sans-serif;padding:20px;font-size:12px;color:#1C2A40}
+    h1{font-size:17px;text-align:center;margin-bottom:4px}
+    h3{font-size:13px;color:#D4500A;margin:18px 0 6px;border-left:4px solid #D4500A;padding-left:8px}
+    p.sub{text-align:center;color:#666;margin-bottom:20px}
+    table{border-collapse:collapse;width:100%;margin-bottom:12px}
+    th{background:#1C2A40;color:#fff;padding:6px 8px;font-size:11px;text-align:center}
+    td{border:1px solid #ddd;padding:5px 8px;font-size:12px;text-align:center}
+    td:nth-child(2),td:nth-child(5){text-align:left}
+    tr.alt td{background:#f9f9f9}
+    .school-block{margin-bottom:16px;page-break-inside:avoid}
+    @media print{@page{size:A4;margin:12mm}}</style></head>
+    <body>
+    <h1>BHARATHEEYA VIDYA NIKETAN – KOLLAM DISTRICT</h1>
+    <p class="sub">സമിതി അംഗങ്ങൾ · Academic Year 2026–27 · ${new Date().toLocaleDateString("en-IN")}</p>
+    ${sections}
+    </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+// ─── Print: All Schools Teachers PDF ─────────────────────────────────────
+function printAllTeachersReport(schools, schoolData) {
+  const win = window.open("", "_blank");
+  if (!win) { alert("Pop-up blocked!"); return; }
+  let totalTeachers = 0;
+  const sections = schools.map((s, si) => {
+    const teachers = (schoolData[s.id]?.teachers || []);
+    totalTeachers += teachers.length;
+    if (teachers.length === 0) return `<div class="school-block"><h3>${si+1}. ${s.name}</h3><p style="color:#999;font-size:12px">അധ്യാപകരെ ചേർത്തിട്ടില്ല</p></div>`;
+    const rows = teachers.map((t,i) => `
+      <tr class="${i%2===0?"":"alt"}">
+        <td>${i+1}</td><td><b>${t.name}</b></td><td>${t.phone||"—"}</td>
+        <td>${t.joinYear||"—"}</td><td>${t.prevExp?t.prevExp+" yr":"—"}</td>
+        <td>${t.trained?"✅":"❌"}</td>
+        <td style="text-align:left;font-size:11px">${(t.subjects||[]).join(", ")||"—"}</td>
+      </tr>`).join("");
+    return `<div class="school-block">
+      <h3>${si+1}. ${s.name} <span style="color:#666;font-size:12px;font-weight:400">(${s.code} · ${teachers.length} Teachers)</span></h3>
+      <table><thead><tr><th>#</th><th>പേര്</th><th>ഫോൺ</th><th>Join Year</th><th>Exp</th><th>Trained</th><th>Subjects</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }).join("");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+    <title>അധ്യാപകർ – BVN Kollam 2026-27</title>
+    <style>body{font-family:"Noto Sans Malayalam","Segoe UI",sans-serif;padding:20px;font-size:12px;color:#1C2A40}
+    h1{font-size:17px;text-align:center;margin-bottom:4px}
+    h3{font-size:13px;color:#D4500A;margin:18px 0 6px;border-left:4px solid #D4500A;padding-left:8px}
+    p.sub{text-align:center;color:#666;margin-bottom:20px}
+    table{border-collapse:collapse;width:100%;margin-bottom:12px}
+    th{background:#1C2A40;color:#fff;padding:6px 8px;font-size:11px;text-align:center}
+    td{border:1px solid #ddd;padding:5px 8px;font-size:12px;text-align:center}
+    td:nth-child(2){text-align:left}
+    tr.alt td{background:#f9f9f9}
+    .school-block{margin-bottom:16px;page-break-inside:avoid}
+    @media print{@page{size:A4;margin:12mm}}</style></head>
+    <body>
+    <h1>BHARATHEEYA VIDYA NIKETAN – KOLLAM DISTRICT</h1>
+    <p class="sub">അധ്യാപകർ · Academic Year 2026–27 · ${schools.length} Schools · ആകെ ${totalTeachers} Teachers · ${new Date().toLocaleDateString("en-IN")}</p>
+    ${sections}
+    </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+// ─── Print: Individual School Full Report PDF ─────────────────────────────
+function printSchoolReport(school, data) {
+  if (!school || !data) { alert("School data not found"); return; }
+  const win = window.open("", "_blank");
+  if (!win) { alert("Pop-up blocked!"); return; }
+  const st = sumStrength(data.strength || {});
+
+  // Student strength class-wise
+  const strRows = CLASSES.map(c => {
+    const b = Number(data.strength?.[c]?.boys || 0);
+    const g = Number(data.strength?.[c]?.girls || 0);
+    return `<tr><td>${c}</td><td>${b}</td><td>${g}</td><td><b>${b+g}</b></td></tr>`;
+  }).join("");
+
+  // Community
+  const comm = data.community || {};
+  const commTotal = ["SC","ST","OBC","OEC","General"].reduce((a,k)=>a+Number(comm[k]||0),0);
+
+  // Staff
+  const sf = data.staff || {};
+  const totTeach = Number(sf.maleteachers||0)+Number(sf.femaleteachers||0);
+  const totNT = Number(sf.officestaff||0)+Number(sf.otherstaff||0)+Number(sf.busstaff||0)+Number(sf.ayah||0);
+
+  // Teachers list
+  const teachers = data.teachers || [];
+  const teacherRows = teachers.length > 0
+    ? teachers.map((t,i)=>`<tr class="${i%2===0?"":"alt"}"><td>${i+1}</td><td><b>${t.name}</b></td><td>${t.phone||"—"}</td><td>${t.joinYear||"—"}</td><td>${t.prevExp?t.prevExp+" yr":"—"}</td><td>${t.trained?"✅ Trained":"❌"}</td><td>${(t.subjects||[]).join(", ")||"—"}</td></tr>`).join("")
+    : `<tr><td colspan="7" style="color:#999">അധ്യാപകരെ ചേർത്തിട്ടില്ല</td></tr>`;
+
+  // Samithi list
+  const samithi = data.samithi || [];
+  const roleColor={"President":"#7C3AED","Vice President":"#2563EB","Secretary":"#D4500A","Joint Secretary":"#D97706","Treasurer":"#1A6B3A","Samithi Member":"#374151"};
+  const samithiRows = samithi.length > 0
+    ? samithi.map((m,i)=>`<tr class="${i%2===0?"":"alt"}"><td>${i+1}</td><td><b>${m.name}</b></td><td><span style="background:${roleColor[m.role]||"#374151"};color:#fff;padding:1px 7px;border-radius:8px;font-size:11px">${m.role||"—"}</span></td><td>${m.phone||"—"}</td><td>${m.address||"—"}</td></tr>`).join("")
+    : `<tr><td colspan="5" style="color:#999">സമിതി അംഗങ്ങളെ ചേർത്തിട്ടില്ല</td></tr>`;
+
+  // Growth
+  const pv = Number(data.prevYearTotal||0);
+  const pna = Number(data.prevYearNewAdmissions||0);
+  const diff = st.total - pv;
+  const pct = pv > 0 ? ((diff/pv)*100).toFixed(1) : "—";
+
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+    <title>${school.name} – Report 2026-27</title>
+    <style>
+      body{font-family:"Noto Sans Malayalam","Segoe UI",sans-serif;padding:20px;font-size:12px;color:#1C2A40}
+      .header{text-align:center;border-bottom:3px solid #D4500A;padding-bottom:14px;margin-bottom:20px}
+      .header h1{font-size:18px;color:#1C2A40;margin-bottom:4px}
+      .header h2{font-size:14px;color:#D4500A;font-weight:600}
+      .header p{font-size:12px;color:#666;margin-top:3px}
+      .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;font-size:12px}
+      .prow{display:flex;gap:6px}.prow span:first-child{color:#666;min-width:110px}.prow span:last-child{font-weight:600}
+      h3{font-size:13px;color:#D4500A;margin:18px 0 8px;border-left:4px solid #D4500A;padding-left:8px;text-transform:uppercase}
+      table{border-collapse:collapse;width:100%;margin-bottom:8px}
+      th{background:#1C2A40;color:#fff;padding:6px 8px;font-size:11px;text-align:center}
+      td{border:1px solid #ddd;padding:5px 8px;font-size:12px;text-align:center}
+      td:nth-child(1){color:#D4500A;font-weight:700}
+      tr.alt td{background:#f9f9f9}
+      tfoot td{background:#1A6B3A;color:#fff;font-weight:700;padding:6px 8px}
+      .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+      .scard{border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center}
+      .scard .val{font-size:22px;font-weight:800;color:#D4500A}
+      .scard .lbl{font-size:11px;color:#666;margin-top:2px}
+      @media print{@page{size:A4;margin:12mm}h3{page-break-before:auto}}
+    </style></head><body>
+    <div class="header">
+      <h1>${school.name}</h1>
+      <h2>BHARATHEEYA VIDYA NIKETAN – KOLLAM</h2>
+      <p>Annual Report · Academic Year 2026–27 · ${new Date().toLocaleDateString("en-IN")}</p>
+    </div>
+
+    <h3>School Profile</h3>
+    <div class="profile-grid">
+      <div class="prow"><span>School Code:</span><span>${school.code||"—"}</span></div>
+      <div class="prow"><span>Level:</span><span>${school.level||"—"}</span></div>
+      <div class="prow"><span>Est. Year:</span><span>${school.estYear||"—"}</span></div>
+      <div class="prow"><span>Headmaster:</span><span>${school.headmaster||"—"}</span></div>
+      <div class="prow"><span>Phone:</span><span>${school.phone||"—"}</span></div>
+      <div class="prow"><span>UDISE:</span><span>${school.udise||"—"}</span></div>
+      <div class="prow"><span>Local Body:</span><span>${school.localBodyType||""} – ${school.localBody||"—"}</span></div>
+      <div class="prow"><span>Taluk:</span><span>${school.taluk||"—"}</span></div>
+      <div class="prow"><span>Place:</span><span>${school.place||"—"}</span></div>
+      <div class="prow"><span>PIN:</span><span>${school.pin||"—"}</span></div>
+    </div>
+
+    <h3>Student Summary</h3>
+    <div class="summary-grid">
+      <div class="scard"><div class="val">${st.total}</div><div class="lbl">ആകെ കുട്ടികൾ</div></div>
+      <div class="scard"><div class="val">${st.boys}</div><div class="lbl">ആൺകുട്ടികൾ</div></div>
+      <div class="scard"><div class="val">${st.girls}</div><div class="lbl">പെൺകുട്ടികൾ</div></div>
+      <div class="scard"><div class="val">${totTeach}</div><div class="lbl">അധ്യാപകർ</div></div>
+    </div>
+
+    <h3>Class-wise Student Strength</h3>
+    <table>
+      <thead><tr><th>Class</th><th>Boys</th><th>Girls</th><th>Total</th></tr></thead>
+      <tbody>${strRows}</tbody>
+      <tfoot><tr><td><b>TOTAL</b></td><td>${st.boys}</td><td>${st.girls}</td><td><b>${st.total}</b></td></tr></tfoot>
+    </table>
+
+    <h3>Staff Details</h3>
+    <table>
+      <thead><tr><th>Category</th><th>Male</th><th>Female/Count</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:left">Teaching Staff</td><td>${sf.maleteachers||0}</td><td>${sf.femaleteachers||0}</td><td><b>${totTeach}</b></td></tr>
+        <tr class="alt"><td style="text-align:left">Trained Teachers</td><td colspan="2">${sf.trained||0} Trained / ${sf.untrained||0} Untrained</td><td><b>${totTeach}</b></td></tr>
+        <tr><td style="text-align:left">Office Staff</td><td colspan="2">${sf.officestaff||0}</td><td></td></tr>
+        <tr class="alt"><td style="text-align:left">Other Staff</td><td colspan="2">${sf.otherstaff||0}</td><td></td></tr>
+        <tr><td style="text-align:left">Bus Staff</td><td colspan="2">${sf.busstaff||0}</td><td></td></tr>
+        <tr class="alt"><td style="text-align:left">Aaya</td><td colspan="2">${sf.ayah||0}</td><td></td></tr>
+      </tbody>
+      <tfoot><tr><td><b>Non-Teaching Total</b></td><td colspan="2"></td><td><b>${totNT}</b></td></tr></tfoot>
+    </table>
+
+    <h3>Community-wise</h3>
+    <table>
+      <thead><tr><th>SC</th><th>ST</th><th>OBC</th><th>OEC</th><th>General</th><th>Total</th></tr></thead>
+      <tbody><tr><td>${comm.SC||0}</td><td>${comm.ST||0}</td><td>${comm.OBC||0}</td><td>${comm.OEC||0}</td><td>${comm.General||0}</td><td><b>${commTotal}</b></td></tr></tbody>
+    </table>
+
+    <h3>Growth Analysis</h3>
+    <table>
+      <thead><tr><th>Prev Year Total</th><th>Prev Year New Admissions</th><th>Current Year</th><th>Difference</th><th>Growth %</th></tr></thead>
+      <tbody><tr><td>${pv}</td><td>${pna}</td><td>${st.total}</td><td style="color:${diff>=0?"green":"red"};font-weight:700">${diff>=0?"+":""}${diff}</td><td>${pct}%</td></tr></tbody>
+    </table>
+
+    <h3>അധ്യാപകർ (${teachers.length})</h3>
+    <table>
+      <thead><tr><th>#</th><th>പേര്</th><th>ഫോൺ</th><th>Join Year</th><th>Exp</th><th>Training</th><th>Subjects</th></tr></thead>
+      <tbody>${teacherRows}</tbody>
+    </table>
+
+    <h3>സമിതി അംഗങ്ങൾ (${samithi.length})</h3>
+    <table>
+      <thead><tr><th>#</th><th>പേര്</th><th>ചുമതല</th><th>ഫോൺ</th><th>മേൽവിലാസം</th></tr></thead>
+      <tbody>${samithiRows}</tbody>
+    </table>
+
+    </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+function ReportsPage({ schools, schoolData, selectedId, isSchoolUser }) {
+  const [filter, setFilter] = useState({ school: selectedId ? String(selectedId) : "all", taluk: "all", panchayat: "all" });
+  const [view, setView] = useState(isSchoolUser ? "schoolwise" : "district");
+
+  const taluks = [...new Set(schools.map(s => s.taluk))].filter(Boolean);
+  const panchayats = [...new Set(schools.map(s => s.panchayat))].filter(Boolean);
+
+  const filtered = isSchoolUser
+    ? schools // already filtered to own school before passing in
+    : schools.filter(s => {
+        if (filter.school !== "all" && s.id !== Number(filter.school)) return false;
+        if (filter.taluk !== "all" && s.taluk !== filter.taluk) return false;
+        if (filter.panchayat !== "all" && s.panchayat !== filter.panchayat) return false;
+        return true;
+      });
+
+  const printReport = () => {
+    const printWin = window.open("", "_blank");
+    if (!printWin) { alert("Pop-up blocked ആണ്! Browser settings-ൽ pop-ups allow ചെയ്യുക."); return; }
+
+    // Build full HTML report with all sections
+    const buildTable = (headers, rows, footer) => `
+      <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r,i)=>`<tr class="${i%2===0?"":"alt"}">${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>
+      ${footer ? `<tfoot><tr>${footer.map(c=>`<td>${c}</td>`).join("")}</tr></tfoot>` : ""}
+      </table>`;
+
+    const allD = filtered.map(s => schoolData[s.id] || makeSchoolData(s.id));
+    const totB = allD.reduce((a,d)=>a+sumStrength(d.strength).boys,0);
+    const totG = allD.reduce((a,d)=>a+sumStrength(d.strength).girls,0);
+    const totT = allD.reduce((a,d)=>a+Number(d.staff.maleteachers||0)+Number(d.staff.femaleteachers||0),0);
+    const totTr = allD.reduce((a,d)=>a+Number(d.staff.trained||0),0);
+    const totUt = allD.reduce((a,d)=>a+Number(d.staff.untrained||0),0);
+    const totOS = allD.reduce((a,d)=>a+Number(d.staff.officestaff||0),0);
+    const totOT = allD.reduce((a,d)=>a+Number(d.staff.otherstaff||0),0);
+    const totBS = allD.reduce((a,d)=>a+Number(d.staff.busstaff||0),0);
+    const totAy = allD.reduce((a,d)=>a+Number(d.staff.ayah||0),0);
+    const totSC = allD.reduce((a,d)=>a+Number(d.community.SC||0),0);
+    const totST = allD.reduce((a,d)=>a+Number(d.community.ST||0),0);
+    const totOBC= allD.reduce((a,d)=>a+Number(d.community.OBC||0),0);
+    const totOEC= allD.reduce((a,d)=>a+Number(d.community.OEC||0),0);
+    const totGen= allD.reduce((a,d)=>a+Number(d.community.General||0),0);
+
+    const strRows  = filtered.map((s,i)=>{ const st=sumStrength(allD[i].strength); return [i+1,s.name,st.boys,st.girls,`<b>${st.total}</b>`]; });
+    const tchRows  = filtered.map((s,i)=>{ const m=Number(allD[i].staff.maleteachers||0),f=Number(allD[i].staff.femaleteachers||0); return [i+1,s.name,m,f,`<b>${m+f}</b>`]; });
+    const trnRows  = filtered.map((s,i)=>{ const tr=Number(allD[i].staff.trained||0),ut=Number(allD[i].staff.untrained||0),tot=Number(allD[i].staff.maleteachers||0)+Number(allD[i].staff.femaleteachers||0); return [i+1,s.name,tr,ut,`<b>${tot}</b>`]; });
+    const ntRows   = filtered.map((s,i)=>{ const os=Number(allD[i].staff.officestaff||0),ot=Number(allD[i].staff.otherstaff||0),bs=Number(allD[i].staff.busstaff||0),ay=Number(allD[i].staff.ayah||0); return [i+1,s.name,os,ot,bs,ay,`<b>${os+ot+bs+ay}</b>`]; });
+    const comRows  = filtered.map((s,i)=>{ const c=allD[i].community,ct=["SC","ST","OBC","OEC","General"].reduce((a,k)=>a+Number(c[k]||0),0); return [i+1,s.name,c.SC||0,c.ST||0,c.OBC||0,c.OEC||0,c.General||0,`<b>${ct}</b>`]; });
+    const grwRows  = filtered.map((s,i)=>{ const pv=Number(allD[i].prevYearTotal||0),pna=Number(allD[i].prevYearNewAdmissions||0),cur=sumStrength(allD[i].strength).total,diff=cur-pv,pct=pv>0?((diff/pv)*100).toFixed(1):"-"; return [i+1,s.name,pv,pna,cur,`<b style="color:${diff>=0?"green":"red"}">${diff>=0?"+":""}${diff}</b>`,pct+"%"]; });
+
+    // ── Presence stats ──
+    const allTaluks = KOLLAM_TALUKS;
+    const activeTaluks = new Set(filtered.map(s=>s.taluk).filter(Boolean));
+    const allGP   = KOLLAM_LOCAL_BODIES["Grama Panchayat"];
+    const activeGP= new Set(filtered.filter(s=>(s.localBodyType||"Grama Panchayat")==="Grama Panchayat").map(s=>s.localBody));
+    const allMun  = KOLLAM_LOCAL_BODIES["Municipality"];
+    const activeMun= new Set(filtered.filter(s=>s.localBodyType==="Municipality").map(s=>s.localBody));
+    const allCorp = KOLLAM_LOCAL_BODIES["Corporation"];
+    const activeCorp= new Set(filtered.filter(s=>s.localBodyType==="Corporation").map(s=>s.localBody));
+
+    const totMale = allD.reduce((a,d)=>a+Number(d.staff.maleteachers||0),0);
+    const totFem  = allD.reduce((a,d)=>a+Number(d.staff.femaleteachers||0),0);
+    const totPrevAll = allD.reduce((a,d)=>a+Number(d.prevYearTotal||0),0);
+
+    const presenceChart = `
+      <table class="presence-table">
+        <thead>
+          <tr>
+            <th>തരം</th>
+            <th>ആകെ</th>
+            <th>✅ പ്രവർത്തനം ഉള്ളത്</th>
+            <th>❌ പ്രവർത്തനം ഇല്ലാത്തത്</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="lbl">താലൂക്ക് (Taluk)</td>
+            <td class="num">${allTaluks.length}</td>
+            <td class="num active">${activeTaluks.size}</td>
+            <td class="num inactive">${allTaluks.length - activeTaluks.size}</td>
+          </tr>
+          <tr class="alt">
+            <td class="lbl">ഗ്രാമ പഞ്ചായത്ത് (Grama Panchayat)</td>
+            <td class="num">${allGP.length}</td>
+            <td class="num active">${activeGP.size}</td>
+            <td class="num inactive">${allGP.length - activeGP.size}</td>
+          </tr>
+          <tr>
+            <td class="lbl">മുനിസിപ്പാലിറ്റി (Municipality)</td>
+            <td class="num">${allMun.length}</td>
+            <td class="num active">${activeMun.size}</td>
+            <td class="num inactive">${allMun.length - activeMun.size}</td>
+          </tr>
+          <tr class="alt">
+            <td class="lbl">കോർപ്പറേഷൻ (Corporation)</td>
+            <td class="num">${allCorp.length}</td>
+            <td class="num active">${activeCorp.size}</td>
+            <td class="num inactive">${allCorp.length - activeCorp.size}</td>
+          </tr>
+        </tbody>
+      </table>`;
+
+    // ── Class-wise rows ──
+    const classRows = filtered.map((s,i) => {
+      const d = allD[i];
+      const cells = CLASSES.map(c => {
+        const b = Number(d.strength?.[c]?.boys||0);
+        const g = Number(d.strength?.[c]?.girls||0);
+        return `${b}/${g}/<b>${b+g}</b>`;
+      });
+      const st = sumStrength(d.strength);
+      return [i+1, s.name, ...cells, `<b>${st.boys}/${st.girls}/${st.total}</b>`];
+    });
+    const classFooter = ["", "<b>TOTAL (B/G/T)</b>"];
+    CLASSES.forEach(c => {
+      const cb = filtered.reduce((a,s,i)=>a+Number(allD[i].strength?.[c]?.boys||0),0);
+      const cg = filtered.reduce((a,s,i)=>a+Number(allD[i].strength?.[c]?.girls||0),0);
+      classFooter.push(`<b>${cb}/${cg}/${cb+cg}</b>`);
+    });
+    classFooter.push(`<b>${totB}/${totG}/${totB+totG}</b>`);
+
+    // ── Staff Summary (Teaching + Non-Teaching + Grand Total) ──
+    const staffSummaryRows = filtered.map((s,i) => {
+      const d = allD[i];
+      const m = Number(d.staff.maleteachers||0), f = Number(d.staff.femaleteachers||0);
+      const teach = m+f;
+      const nt = Number(d.staff.officestaff||0)+Number(d.staff.otherstaff||0)+Number(d.staff.busstaff||0)+Number(d.staff.ayah||0);
+      return [i+1, s.name, m, f, `<b>${teach}</b>`, nt, `<b>${teach+nt}</b>`];
+    });
+    const totNTAll = totOS+totOT+totBS+totAy;
+    const staffSummaryFooter = ["<b>TOTAL</b>","",totMale,totFem,`<b>${totT}</b>`,totNTAll,`<b>${totT+totNTAll}</b>`];
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+    <title>BVN Kollam – Full Report 2026-27</title>
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:"Segoe UI","Noto Sans Malayalam",sans-serif;padding:24px;font-size:12px;color:#1C2A40}
+      h1{font-size:18px;text-align:center;color:#1C2A40;margin-bottom:4px}
+      h2{font-size:13px;color:#D4500A;margin:22px 0 8px;border-bottom:2px solid #D4500A;padding-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+      .subtitle{text-align:center;color:#666;margin-bottom:24px;font-size:12px}
+
+      table{border-collapse:collapse;width:100%;margin-bottom:8px}
+      th{background:#1C2A40;color:#fff;padding:7px 10px;text-align:center;font-size:11px}
+      td{border:1px solid #ddd;padding:6px 10px;text-align:center;font-size:12px}
+      td:nth-child(2){text-align:left}
+      tr.alt td{background:#f7f7f7}
+      tfoot td{background:#1A6B3A;color:#fff;font-weight:700;padding:7px 10px}
+
+      /* Presence chart */
+      .presence-table th{font-size:12px;padding:10px 14px}
+      .presence-table td{font-size:14px;padding:10px 14px}
+      .presence-table td.lbl{text-align:left;font-weight:600;font-size:13px}
+      .presence-table td.num{font-size:20px;font-weight:700;width:120px}
+      .presence-table td.active{color:#166534;background:#f0fdf4}
+      .presence-table td.inactive{color:#991B1B;background:#fef2f2}
+      .presence-table tfoot td{font-size:16px;padding:10px 14px}
+
+      .class-wise table, .class-wise th, .class-wise td { font-size:9px; padding:4px 3px; }
+
+      @media print{
+        @page{size:A4;margin:8mm;orientation:landscape}
+        button{display:none}
+        h2{page-break-before:auto}
+        .presence-table{page-break-inside:avoid}
+      }
+    </style></head><body>
+    <h1>BHARATHEEYA VIDYA NIKETAN – KOLLAM DISTRICT</h1>
+    <p class="subtitle">Annual Statistics Report · Academic Year 2026–27 · ${filtered.length} Schools · ${new Date().toLocaleDateString("en-IN")}</p>
+
+    <h2>1. Local Body Presence</h2>
+    ${presenceChart}
+
+    <h2>2. Student Strength</h2>
+    ${buildTable(["#","School","Boys","Girls","Total"], strRows, ["<b>TOTAL ("+filtered.length+" Schools)</b>","",totB,totG,"<b>"+(totB+totG)+"</b>"])}
+
+    <h2>3. Class-wise Student Strength (Boys/Girls/Total)</h2>
+    <div class="class-wise">${buildTable(["#","School",...CLASSES,"School Total"], classRows, classFooter)}</div>
+
+    <h2>4. Staff Summary — Teaching &amp; Non-Teaching</h2>
+    ${buildTable(["#","School","Male Teachers","Female Teachers","Teaching Total","Non-Teaching Total","Grand Total"], staffSummaryRows, staffSummaryFooter)}
+
+    <h2>5. District Growth Summary</h2>
+    ${buildTable(["ഇപ്പോഴത്തെ ആകെ കുട്ടികൾ (2026–27)","കഴിഞ്ഞ വർഷത്തെ ആകെ (2025–26)","വ്യത്യാസം","Growth %"],
+      [[ `<b>${totB+totG}</b>`, totPrevAll, `<b style="color:${(totB+totG-totPrevAll)>=0?"green":"red"}">${(totB+totG-totPrevAll)>=0?"+":""}${totB+totG-totPrevAll}</b>`, totPrevAll>0?(((totB+totG-totPrevAll)/totPrevAll)*100).toFixed(1)+"%":"—" ]], null)}
+
+    <h2>6. Teacher Training Status</h2>
+    ${buildTable(["#","School","Trained","Untrained","Total"], trnRows, ["<b>TOTAL</b>","",totTr,totUt,"<b>"+totT+"</b>"])}
+
+    <h2>7. Non-Teaching Staff</h2>
+    ${buildTable(["#","School","Office Staff","Other Staff","Bus Staff","Aaya","Total"], ntRows, ["<b>TOTAL</b>","",totOS,totOT,totBS,totAy,"<b>"+(totOS+totOT+totBS+totAy)+"</b>"])}
+
+    <h2>8. Community-wise</h2>
+    ${buildTable(["#","School","SC","ST","OBC","OEC","General","Total"], comRows, ["<b>TOTAL</b>","",totSC,totST,totOBC,totOEC,totGen,"<b>"+(totSC+totST+totOBC+totOEC+totGen)+"</b>"])}
+
+    <h2>9. Growth Analysis</h2>
+    ${buildTable(["#","School","Prev Year Total","Prev Year New Admissions","Current Year","Difference","Growth %"], grwRows, [])}
+
+    </body></html>`;
+
+    printWin.document.write(html);
+    printWin.document.close();
+    setTimeout(() => printWin.print(), 600);
+  };
+
+  return (
+    <>
+      {/* Download buttons — Admin only */}
+      {!isSchoolUser && (
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="btn-group" style={{ flexWrap:"wrap" }}>
+          <button className="btn btn-primary" onClick={printReport}>🖨️ District Report PDF</button>
+          <button className="btn btn-secondary" onClick={() => exportCSV(filtered, schoolData)}>📊 School-wise CSV</button>
+          <button className="btn btn-secondary" style={{background:"#1A6B3A"}} onClick={() => exportFullReport(filtered, schoolData)}>📥 Full Report CSV</button>
+          <button className="btn btn-secondary" style={{background:"#6D28D9"}} onClick={() => printSamithiReport(filtered, schoolData)}>🤝 സമിതി PDF</button>
+          <button className="btn btn-secondary" style={{background:"#0369A1"}} onClick={() => printAllTeachersReport(filtered, schoolData)}>👨‍🏫 Teachers PDF</button>
+        </div>
+      </div>
+      )}
+
+      {/* School user — simple download bar */}
+      {isSchoolUser && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-title">📄 My School Report</div>
+          <div className="btn-group">
+            <button className="btn btn-primary" onClick={() => printSchoolReport(filtered[0], schoolData[filtered[0]?.id])}>🖨️ School Report PDF</button>
+          </div>
+        </div>
+      )}
+
+      <div className="tabs">
+        {!isSchoolUser && [["district","District Summary"],["schoolwise","School-wise"],["talukwise","Taluk-wise"],["panchayatwise","Panchayat-wise"]].map(([k,l]) => (
+          <div key={k} className={`tab ${view === k ? "active" : ""}`} onClick={() => setView(k)}>{l}</div>
+        ))}
+        {isSchoolUser && (
+          <div className="tab active">🏫 School Report</div>
+        )}
+      </div>
+
+      {view === "district" && <DistrictReport schools={filtered} schoolData={schoolData} />}
+      {view === "schoolwise" && <SchoolWiseReport schools={filtered} schoolData={schoolData} />}
+      {view === "talukwise" && <TalukWiseReport schools={filtered} schoolData={schoolData} />}
+      {view === "panchayatwise" && <PanchayatWiseReport schools={filtered} schoolData={schoolData} />}
+    </>
+  );
+}
+
+function DistrictReport({ schools, schoolData }) {
+  const allData = schools.map(s => schoolData[s.id] || makeSchoolData(s.id));
+  const totals = {
+    boys:    allData.reduce((a, d) => a + sumStrength(d.strength).boys, 0),
+    girls:   allData.reduce((a, d) => a + sumStrength(d.strength).girls, 0),
+    total:   allData.reduce((a, d) => a + sumStrength(d.strength).total, 0),
+    male:    allData.reduce((a, d) => a + Number(d.staff.maleteachers || 0), 0),
+    female:  allData.reduce((a, d) => a + Number(d.staff.femaleteachers || 0), 0),
+    SC:      allData.reduce((a, d) => a + Number(d.community.SC || 0), 0),
+    ST:      allData.reduce((a, d) => a + Number(d.community.ST || 0), 0),
+    OBC:     allData.reduce((a, d) => a + Number(d.community.OBC || 0), 0),
+    OEC:     allData.reduce((a, d) => a + Number(d.community.OEC || 0), 0),
+    General: allData.reduce((a, d) => a + Number(d.community.General || 0), 0),
+    officestaff: allData.reduce((a,d) => a + Number(d.staff.officestaff||0), 0),
+    otherstaff:  allData.reduce((a,d) => a + Number(d.staff.otherstaff||0), 0),
+    busstaff:    allData.reduce((a,d) => a + Number(d.staff.busstaff||0), 0),
+    ayah:        allData.reduce((a,d) => a + Number(d.staff.ayah||0), 0),
+  };
+  totals.teachers = totals.male + totals.female;
+
+  const thStyle = { background: COLORS.navBg, color: "#fff", padding: "8px 10px", fontSize: 12, textAlign: "center" };
+  const tdStyle = { padding: "7px 10px", fontSize: 13, textAlign: "center", borderBottom: `1px solid ${COLORS.border}` };
+  const tdName = { ...tdStyle, textAlign: "left", fontWeight: 600 };
+  const tfoot = { background: "#1A6B3A", color: "#fff", fontWeight: 700, padding: "8px 10px", textAlign: "center" };
+
+  return (
+    <>
+      {/* Header */}
+      <div className="card" style={{ marginBottom: 20, textAlign: "center" }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: COLORS.navBg }}>BHARATHEEYA VIDYA NIKETAN – KOLLAM DISTRICT</h3>
+        <p style={{ fontSize: 13, color: COLORS.textMuted }}>Annual Statistics Report · Academic Year 2026–27</p>
+        <p style={{ fontSize: 12, color: COLORS.textMuted }}>{schools.length} Schools · {new Date().toLocaleDateString("en-IN")}</p>
+      </div>
+
+      {/* 1. Student Strength — school-by-school */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">👨‍🎓 വിദ്യാർത്ഥി ശക്തി (Student Strength)</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                <th style={thStyle}>Boys</th>
+                <th style={thStyle}>Girls</th>
+                <th style={thStyle}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const st = sumStrength(d.strength);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdName}>{s.name}</td>
+                    <td style={tdStyle}>{fmtNum(st.boys)}</td>
+                    <td style={tdStyle}>{fmtNum(st.girls)}</td>
+                    <td style={{...tdStyle, fontWeight:700, color: COLORS.primary}}>{fmtNum(st.total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL ({schools.length} Schools)</td>
+                <td style={tfoot}>{fmtNum(totals.boys)}</td>
+                <td style={tfoot}>{fmtNum(totals.girls)}</td>
+                <td style={tfoot}>{fmtNum(totals.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 1.5. Class-wise Student Strength — all schools, all classes */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">📚 ക്ലാസ് അടിസ്ഥാനത്തിൽ വിദ്യാർത്ഥി ശക്തി (Class-wise Student Strength)</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                {CLASSES.map(c => (
+                  <th key={c} colSpan={3} style={thStyle}>{c}</th>
+                ))}
+                <th colSpan={3} style={{...thStyle, background: COLORS.primary}}>School Total</th>
+              </tr>
+              <tr>
+                <th style={{...thStyle, textAlign:"left"}}></th>
+                {CLASSES.map(c => (
+                  <React.Fragment key={c}>
+                    <th style={{...thStyle, fontSize:11}}>B</th>
+                    <th style={{...thStyle, fontSize:11}}>G</th>
+                    <th style={{...thStyle, fontSize:11, background:"#374151"}}>T</th>
+                  </React.Fragment>
+                ))}
+                <th style={{...thStyle, fontSize:11, background: COLORS.primaryDark}}>B</th>
+                <th style={{...thStyle, fontSize:11, background: COLORS.primaryDark}}>G</th>
+                <th style={{...thStyle, fontSize:11, background: COLORS.primaryDark}}>T</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const st = sumStrength(d.strength);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdName}>{s.name}</td>
+                    {CLASSES.map(c => {
+                      const b = Number(d.strength?.[c]?.boys || 0);
+                      const g = Number(d.strength?.[c]?.girls || 0);
+                      return (
+                        <React.Fragment key={c}>
+                          <td style={tdStyle}>{b || "—"}</td>
+                          <td style={tdStyle}>{g || "—"}</td>
+                          <td style={{...tdStyle, fontWeight:600}}>{(b+g) || "—"}</td>
+                        </React.Fragment>
+                      );
+                    })}
+                    <td style={{...tdStyle, fontWeight:700, color:COLORS.primary}}>{st.boys}</td>
+                    <td style={{...tdStyle, fontWeight:700, color:COLORS.primary}}>{st.girls}</td>
+                    <td style={{...tdStyle, fontWeight:800, color:COLORS.primary, background:"#FEF3E8"}}>{st.total}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                {CLASSES.map(c => {
+                  const cb = schools.reduce((a,s)=>a+Number((schoolData[s.id]||makeSchoolData(s.id)).strength?.[c]?.boys||0),0);
+                  const cg = schools.reduce((a,s)=>a+Number((schoolData[s.id]||makeSchoolData(s.id)).strength?.[c]?.girls||0),0);
+                  return (
+                    <React.Fragment key={c}>
+                      <td style={tfoot}>{cb}</td>
+                      <td style={tfoot}>{cg}</td>
+                      <td style={{...tfoot, background:"#0F3D22"}}>{cb+cg}</td>
+                    </React.Fragment>
+                  );
+                })}
+                <td style={tfoot}>{totals.boys}</td>
+                <td style={tfoot}>{totals.girls}</td>
+                <td style={{...tfoot, background:"#0F3D22"}}>{totals.total}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 2. Teaching Staff */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">👩‍🏫 അധ്യാപകർ (Teaching Staff)</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                <th style={thStyle}>Male Teachers</th>
+                <th style={thStyle}>Female Teachers</th>
+                <th style={thStyle}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const m = Number(d.staff.maleteachers || 0);
+                const f = Number(d.staff.femaleteachers || 0);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdName}>{s.name}</td>
+                    <td style={tdStyle}>{fmtNum(m)}</td>
+                    <td style={tdStyle}>{fmtNum(f)}</td>
+                    <td style={{...tdStyle, fontWeight:700, color: COLORS.secondary}}>{fmtNum(m + f)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                <td style={tfoot}>{fmtNum(totals.male)}</td>
+                <td style={tfoot}>{fmtNum(totals.female)}</td>
+                <td style={tfoot}>{fmtNum(totals.teachers)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 3. Teacher Training Status */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">🎓 Teacher Training Status</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                <th style={thStyle}>Trained</th>
+                <th style={thStyle}>Untrained</th>
+                <th style={thStyle}>Total Teachers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const tr = Number(d.staff.trained || 0);
+                const ut = Number(d.staff.untrained || 0);
+                const tot = Number(d.staff.maleteachers||0) + Number(d.staff.femaleteachers||0);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdName}>{s.name}</td>
+                    <td style={{...tdStyle, color: COLORS.secondary, fontWeight:600}}>{fmtNum(tr)}</td>
+                    <td style={{...tdStyle, color: COLORS.danger}}>{fmtNum(ut)}</td>
+                    <td style={{...tdStyle, fontWeight:700}}>{fmtNum(tot)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                <td style={tfoot}>{fmtNum(allData.reduce((a,d)=>a+Number(d.staff.trained||0),0))}</td>
+                <td style={tfoot}>{fmtNum(allData.reduce((a,d)=>a+Number(d.staff.untrained||0),0))}</td>
+                <td style={tfoot}>{fmtNum(totals.teachers)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 4. Non-Teaching Staff */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">👷 Non-Teaching Staff</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                <th style={thStyle}>Office Staff</th>
+                <th style={thStyle}>Other Staff</th>
+                <th style={thStyle}>Bus Staff</th>
+                <th style={thStyle}>Aaya</th>
+                <th style={thStyle}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const os = Number(d.staff.officestaff||0), ot = Number(d.staff.otherstaff||0),
+                      bs = Number(d.staff.busstaff||0), ay = Number(d.staff.ayah||0);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdName}>{s.name}</td>
+                    <td style={tdStyle}>{fmtNum(os)}</td>
+                    <td style={tdStyle}>{fmtNum(ot)}</td>
+                    <td style={tdStyle}>{fmtNum(bs)}</td>
+                    <td style={tdStyle}>{fmtNum(ay)}</td>
+                    <td style={{...tdStyle, fontWeight:700, color: COLORS.secondary}}>{fmtNum(os+ot+bs+ay)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                <td style={tfoot}>{fmtNum(totals.officestaff)}</td>
+                <td style={tfoot}>{fmtNum(totals.otherstaff)}</td>
+                <td style={tfoot}>{fmtNum(totals.busstaff)}</td>
+                <td style={tfoot}>{fmtNum(totals.ayah)}</td>
+                <td style={tfoot}>{fmtNum(totals.officestaff+totals.otherstaff+totals.busstaff+totals.ayah)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 5. Community-wise */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-title">🏷️ Community-wise Breakdown</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={{...thStyle, textAlign:"left"}}>School</th>
+                <th style={thStyle}>SC</th>
+                <th style={thStyle}>ST</th>
+                <th style={thStyle}>OBC</th>
+                <th style={thStyle}>OEC</th>
+                <th style={thStyle}>General</th>
+                <th style={thStyle}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((s, i) => {
+                const d = schoolData[s.id] || makeSchoolData(s.id);
+                const c = d.community;
+                const ct = ["SC","ST","OBC","OEC","General"].reduce((a,k) => a + Number(c[k]||0), 0);
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                    <td style={tdStyle}>{i + 1}</td>
+                    <td style={tdName}>{s.name}</td>
+                    <td style={tdStyle}>{fmtNum(c.SC||0)}</td>
+                    <td style={tdStyle}>{fmtNum(c.ST||0)}</td>
+                    <td style={tdStyle}>{fmtNum(c.OBC||0)}</td>
+                    <td style={tdStyle}>{fmtNum(c.OEC||0)}</td>
+                    <td style={tdStyle}>{fmtNum(c.General||0)}</td>
+                    <td style={{...tdStyle, fontWeight:700, color: COLORS.primary}}>{fmtNum(ct)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                <td style={tfoot}>{fmtNum(totals.SC)}</td>
+                <td style={tfoot}>{fmtNum(totals.ST)}</td>
+                <td style={tfoot}>{fmtNum(totals.OBC)}</td>
+                <td style={tfoot}>{fmtNum(totals.OEC)}</td>
+                <td style={tfoot}>{fmtNum(totals.General)}</td>
+                <td style={tfoot}>{fmtNum(totals.SC+totals.ST+totals.OBC+totals.OEC+totals.General)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SchoolWiseReport({ schools, schoolData }) {
+  return (
+    <div className="card">
+      <div className="card-title">🏫 School-wise Report</div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>School</th><th>Level</th><th>Local Body</th><th>Taluk</th><th>Boys</th><th>Girls</th><th>Total</th><th>Teachers</th><th>SC</th><th>ST</th><th>OBC</th><th>OEC</th><th>General</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {schools.map((s, i) => {
+              const d = schoolData[s.id] || makeSchoolData(s.id);
+              const st = sumStrength(d.strength);
+              const t = Number(d.staff.maleteachers || 0) + Number(d.staff.femaleteachers || 0);
+              const lbIcon = s.localBodyType === "Corporation" ? "🏙️" : s.localBodyType === "Municipality" ? "🏘️" : "🌾";
+              return (
+                <tr key={s.id}>
+                  <td>{i + 1}</td>
+                  <td style={{ fontSize: 13 }}><strong>{s.name}</strong></td>
+                  <td style={{ fontSize: 12 }}>{s.level}</td>
+                  <td style={{ fontSize: 12 }}>{lbIcon} {s.localBody || "—"}<br/><span style={{ fontSize: 11, color: COLORS.textMuted }}>{s.localBodyType}</span></td>
+                  <td style={{ fontSize: 12 }}>{s.taluk}</td>
+                  <td>{fmtNum(st.boys)}</td>
+                  <td>{fmtNum(st.girls)}</td>
+                  <td><strong>{fmtNum(st.total)}</strong></td>
+                  <td>{fmtNum(t)}</td>
+                  <td>{fmtNum(d.community.SC || 0)}</td>
+                  <td>{fmtNum(d.community.ST || 0)}</td>
+                  <td>{fmtNum(d.community.OBC || 0)}</td>
+                  <td>{fmtNum(d.community.OEC || 0)}</td>
+                  <td>{fmtNum(d.community.General || 0)}</td>
+                  <td><StatusBadge status={d.status} /></td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="tfoot">
+              <td colSpan={5}><strong>TOTAL ({schools.length} Schools)</strong></td>
+              {["boys","girls","total"].map(k => <td key={k}><strong>{fmtNum(schools.reduce((a,s) => a + sumStrength(schoolData[s.id]?.strength || makeStudentStrength())[k], 0))}</strong></td>)}
+              <td><strong>{fmtNum(schools.reduce((a,s) => a + Number(schoolData[s.id]?.staff.maleteachers||0) + Number(schoolData[s.id]?.staff.femaleteachers||0), 0))}</strong></td>
+              {["SC","ST","OBC","OEC","General"].map(c => <td key={c}><strong>{fmtNum(schools.reduce((a,s) => a + Number(schoolData[s.id]?.community[c]||0), 0))}</strong></td>)}
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TalukWiseReport({ schools, schoolData }) {
+  const thStyle = { background: COLORS.navBg, color: "#fff", padding: "8px 10px", fontSize: 12, textAlign: "center" };
+  const tdStyle = { padding: "7px 10px", fontSize: 13, textAlign: "center", borderBottom: `1px solid ${COLORS.border}` };
+  const tfoot = { background: "#1A6B3A", color: "#fff", fontWeight: 700, padding: "8px 10px", textAlign: "center" };
+
+  return (
+    <>
+      {KOLLAM_TALUKS.map(taluk => {
+        const ts = schools.filter(s => s.taluk === taluk);
+        if (ts.length === 0) return null;
+        const activePanchayats = new Set(ts.filter(s=>(s.localBodyType||"Grama Panchayat")==="Grama Panchayat").map(s=>s.localBody)).size;
+        const activeMun = new Set(ts.filter(s=>s.localBodyType==="Municipality").map(s=>s.localBody)).size;
+        const activeCorp = new Set(ts.filter(s=>s.localBodyType==="Corporation").map(s=>s.localBody)).size;
+        const totBoys = ts.reduce((a,s)=>a+sumStrength(schoolData[s.id]?.strength||makeStudentStrength()).boys,0);
+        const totGirls = ts.reduce((a,s)=>a+sumStrength(schoolData[s.id]?.strength||makeStudentStrength()).girls,0);
+        return (
+          <div className="card" key={taluk} style={{ marginBottom: 20 }}>
+            <div className="card-title">🏛️ {taluk} Taluk
+              <span style={{ marginLeft: 12, fontSize: 12, fontWeight: 400, color: COLORS.textMuted }}>
+                {ts.length} Schools &nbsp;|&nbsp;
+                🌾 {activePanchayats} Panchayat{activeMun > 0 ? ` | 🏘️ ${activeMun} Municipality` : ""}{activeCorp > 0 ? ` | 🏙️ ${activeCorp} Corporation` : ""}
+              </span>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>#</th>
+                    <th style={{...thStyle, textAlign:"left"}}>School</th>
+                    <th style={thStyle}>Local Body</th>
+                    <th style={thStyle}>Boys</th>
+                    <th style={thStyle}>Girls</th>
+                    <th style={thStyle}>Total</th>
+                    <th style={thStyle}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ts.map((s, i) => {
+                    const d = schoolData[s.id] || makeSchoolData(s.id);
+                    const st = sumStrength(d.strength);
+                    return (
+                      <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                        <td style={tdStyle}>{i + 1}</td>
+                        <td style={{...tdStyle, textAlign:"left", fontWeight:600}}>{s.name}</td>
+                        <td style={{...tdStyle, fontSize:12}}>{s.localBody || "—"}</td>
+                        <td style={tdStyle}>{fmtNum(st.boys)}</td>
+                        <td style={tdStyle}>{fmtNum(st.girls)}</td>
+                        <td style={{...tdStyle, fontWeight:700, color:COLORS.primary}}>{fmtNum(st.total)}</td>
+                        <td style={tdStyle}><StatusBadge status={d.status} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3} style={{...tfoot, textAlign:"left"}}>ആകെ TOTAL</td>
+                    <td style={tfoot}>{fmtNum(totBoys)}</td>
+                    <td style={tfoot}>{fmtNum(totGirls)}</td>
+                    <td style={tfoot}>{fmtNum(totBoys+totGirls)}</td>
+                    <td style={tfoot}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function PanchayatWiseReport({ schools, schoolData }) {
+  const thStyle = { background: COLORS.navBg, color: "#fff", padding: "8px 10px", fontSize: 12, textAlign: "center" };
+  const tdStyle = { padding: "7px 10px", fontSize: 13, textAlign: "center", borderBottom: `1px solid ${COLORS.border}` };
+  const tfoot = { background: "#1A6B3A", color: "#fff", fontWeight: 700, padding: "8px 10px", textAlign: "center" };
+
+  // Group by local body type, then local body
+  const lbTypes = [
+    { type: "Grama Panchayat", icon: "🌾", all: KOLLAM_LOCAL_BODIES["Grama Panchayat"] },
+    { type: "Municipality", icon: "🏘️", all: KOLLAM_LOCAL_BODIES["Municipality"] },
+    { type: "Corporation", icon: "🏙️", all: KOLLAM_LOCAL_BODIES["Corporation"] },
+  ];
+
+  return (
+    <>
+      {lbTypes.map(({ type, icon, all }) => {
+        const lbSchools = schools.filter(s => (s.localBodyType || "Grama Panchayat") === type);
+        const activeBodies = [...new Set(lbSchools.map(s => s.localBody).filter(Boolean))];
+        const inactiveCount = all.length - activeBodies.length;
+
+        return (
+          <div key={type} style={{ marginBottom: 24 }}>
+            {/* Summary row for this type */}
+            <div className="card" style={{ marginBottom: 12, padding: "12px 16px", display:"flex", gap:24, alignItems:"center", flexWrap:"wrap" }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{icon} {type}</span>
+              <span>ആകെ: <strong>{all.length}</strong></span>
+              <span style={{ color: COLORS.secondary }}>✅ Active: <strong>{activeBodies.length}</strong></span>
+              <span style={{ color: COLORS.danger }}>❌ Inactive: <strong>{inactiveCount}</strong></span>
+              <span>Schools: <strong>{lbSchools.length}</strong></span>
+            </div>
+
+            {/* Each active local body — school list + totals */}
+            {activeBodies.map(body => {
+              const bs = lbSchools.filter(s => s.localBody === body);
+              const totBoys = bs.reduce((a,s)=>a+sumStrength(schoolData[s.id]?.strength||makeStudentStrength()).boys,0);
+              const totGirls = bs.reduce((a,s)=>a+sumStrength(schoolData[s.id]?.strength||makeStudentStrength()).girls,0);
+              return (
+                <div className="card" key={body} style={{ marginBottom: 12 }}>
+                  <div className="card-title" style={{ fontSize: 13 }}>{icon} {body} ({bs.length} school{bs.length > 1 ? "s" : ""})</div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>#</th>
+                          <th style={{...thStyle, textAlign:"left"}}>School</th>
+                          <th style={thStyle}>Taluk</th>
+                          <th style={thStyle}>Boys</th>
+                          <th style={thStyle}>Girls</th>
+                          <th style={thStyle}>Total</th>
+                          <th style={thStyle}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bs.map((s, i) => {
+                          const d = schoolData[s.id] || makeSchoolData(s.id);
+                          const st = sumStrength(d.strength);
+                          return (
+                            <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : COLORS.bg }}>
+                              <td style={tdStyle}>{i + 1}</td>
+                              <td style={{...tdStyle, textAlign:"left", fontWeight:600}}>{s.name}</td>
+                              <td style={{...tdStyle, fontSize:12, fontWeight:600, color:COLORS.secondary}}>{s.taluk || "—"}</td>
+                              <td style={tdStyle}>{fmtNum(st.boys)}</td>
+                              <td style={tdStyle}>{fmtNum(st.girls)}</td>
+                              <td style={{...tdStyle, fontWeight:700, color:COLORS.primary}}>{fmtNum(st.total)}</td>
+                              <td style={tdStyle}><StatusBadge status={d.status} /></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={3} style={{...tfoot, textAlign:"left"}}>ആകെ</td>
+                          <td style={tfoot}>{fmtNum(totBoys)}</td>
+                          <td style={tfoot}>{fmtNum(totGirls)}</td>
+                          <td style={tfoot}>{fmtNum(totBoys+totGirls)}</td>
+                          <td style={tfoot}></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+
+// ─── Teachers Page ────────────────────────────────────────────────────────
+function TeachersPage({ data, onUpdate, subjects }) {
+  const teachers = data.teachers || [];
+  const [form, setForm] = useState({ name:"", phone:"", joinYear:"", prevExp:"", trained: false, subjects:[] });
+  const [editIdx, setEditIdx] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const subList = subjects && subjects.length > 0 ? subjects : DEFAULT_SUBJECTS;
+
+  const save = () => {
+    if (!form.name.trim()) { alert("പേര് കൊടുക്കുക"); return; }
+    let updated;
+    if (editIdx !== null) {
+      updated = teachers.map((t,i) => i === editIdx ? form : t);
+    } else {
+      updated = [...teachers, { ...form, id: Date.now() }];
+    }
+    onUpdate("teachers", updated);
+    setForm({ name:"", phone:"", joinYear:"", prevExp:"", trained: false, subjects:[] });
+    setEditIdx(null); setShowForm(false);
+  };
+
+  const del = (i) => {
+    if (!window.confirm("Delete this teacher?")) return;
+    onUpdate("teachers", teachers.filter((_,idx) => idx !== i));
+  };
+
+  const edit = (i) => {
+    setForm({ ...teachers[i], subjects: teachers[i].subjects || [] });
+    setEditIdx(i); setShowForm(true);
+  };
+
+  const toggleSubject = (s) => {
+    setForm(f => ({
+      ...f,
+      subjects: f.subjects.includes(s) ? f.subjects.filter(x=>x!==s) : [...f.subjects, s]
+    }));
+  };
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <h2 style={{ fontSize:18, fontWeight:700, color:COLORS.navBg }}>👨‍🏫 അധ്യാപകർ ({teachers.length})</h2>
+        <button className="btn btn-primary btn-sm" onClick={() => { setForm({ name:"", phone:"", joinYear:"", prevExp:"", trained:false, subjects:[] }); setEditIdx(null); setShowForm(true); }}>
+          ➕ Add Teacher
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom:20, border:`2px solid ${COLORS.primary}` }}>
+          <div className="card-title">{editIdx !== null ? "✏️ Edit Teacher" : "➕ New Teacher"}</div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>പേര് *</label>
+              <input className="form-control" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Teacher name" />
+            </div>
+            <div className="form-group">
+              <label>ഫോൺ</label>
+              <input className="form-control" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="Phone number" />
+            </div>
+            <div className="form-group">
+              <label>Join ചെയ്ത വർഷം</label>
+              <input className="form-control" type="number" min="1980" max="2026" value={form.joinYear} onChange={e=>setForm(f=>({...f,joinYear:e.target.value}))} placeholder="e.g. 2015" />
+            </div>
+            <div className="form-group">
+              <label>Previous Experience (years)</label>
+              <input className="form-control" type="number" min="0" value={form.prevExp} onChange={e=>setForm(f=>({...f,prevExp:e.target.value}))} placeholder="0" />
+            </div>
+          </div>
+          <div className="form-group" style={{ marginTop:8 }}>
+            <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+              <input type="checkbox" checked={form.trained} onChange={e=>setForm(f=>({...f,trained:e.target.checked}))} />
+              <span style={{ fontWeight:600 }}>✅ Training completed</span>
+            </label>
+          </div>
+          <div className="form-group" style={{ marginTop:12 }}>
+            <label style={{ fontWeight:600, marginBottom:8, display:"block" }}>📚 Subjects</label>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {subList.map(s => (
+                <label key={s} style={{ display:"flex", alignItems:"center", gap:4, background: form.subjects.includes(s) ? COLORS.primary : "#f0f0f0", color: form.subjects.includes(s) ? "#fff" : COLORS.text, padding:"4px 10px", borderRadius:16, cursor:"pointer", fontSize:13, fontWeight:500, transition:"all 0.2s" }}>
+                  <input type="checkbox" style={{ display:"none" }} checked={form.subjects.includes(s)} onChange={()=>toggleSubject(s)} />
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="btn-group" style={{ marginTop:16 }}>
+            <button className="btn btn-primary" onClick={save}>💾 Save</button>
+            <button className="btn btn-outline" onClick={()=>{ setShowForm(false); setEditIdx(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {teachers.length === 0 ? (
+        <div className="alert alert-warning">അധ്യാപകരെ ചേർക്കുക.</div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>പേര്</th><th>ഫോൺ</th><th>Join Year</th><th>Exp</th><th>Training</th><th>Subjects</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teachers.map((t,i) => (
+                <tr key={t.id||i} style={{ background: i%2===0?"#fff":COLORS.bg }}>
+                  <td style={{ color:COLORS.primary, fontWeight:700 }}>{i+1}</td>
+                  <td style={{ fontWeight:600, color:COLORS.navBg }}>{t.name}</td>
+                  <td>{t.phone || "—"}</td>
+                  <td>{t.joinYear || "—"}</td>
+                  <td>{t.prevExp ? `${t.prevExp} yr` : "—"}</td>
+                  <td>{t.trained ? <span className="badge badge-success">✅ Trained</span> : <span className="badge badge-draft">❌ Untrained</span>}</td>
+                  <td style={{ fontSize:12 }}>{(t.subjects||[]).join(", ") || "—"}</td>
+                  <td>
+                    <div className="btn-group">
+                      <button className="btn btn-secondary btn-sm" onClick={()=>edit(i)}>✏️</button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>del(i)}>🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Samithi Page ─────────────────────────────────────────────────────────
+function SamithiPage({ data, onUpdate }) {
+  const samithi = data.samithi || [];
+  const [form, setForm] = useState({ name:"", phone:"", role:"", address:"" });
+  const [editIdx, setEditIdx] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const save = () => {
+    if (!form.name.trim()) { alert("പേര് കൊടുക്കുക"); return; }
+    if (!form.role) { alert("ചുമതല സെലക്ട് ചെയ്യുക"); return; }
+    let updated;
+    if (editIdx !== null) {
+      updated = samithi.map((m,i) => i === editIdx ? form : m);
+    } else {
+      updated = [...samithi, { ...form, id: Date.now() }];
+    }
+    onUpdate("samithi", updated);
+    setForm({ name:"", phone:"", role:"", address:"" });
+    setEditIdx(null); setShowForm(false);
+  };
+
+  const del = (i) => {
+    if (!window.confirm("Delete?")) return;
+    onUpdate("samithi", samithi.filter((_,idx) => idx !== i));
+  };
+
+  const edit = (i) => { setForm(samithi[i]); setEditIdx(i); setShowForm(true); };
+
+  const roleColor = { "President":"#7C3AED","Vice President":"#2563EB","Secretary":"#D4500A","Joint Secretary":"#D97706","Treasurer":"#1A6B3A","Samithi Member":"#374151" };
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <h2 style={{ fontSize:18, fontWeight:700, color:COLORS.navBg }}>🤝 സമിതി അംഗങ്ങൾ ({samithi.length})</h2>
+        <button className="btn btn-primary btn-sm" onClick={()=>{ setForm({ name:"", phone:"", role:"", address:"" }); setEditIdx(null); setShowForm(true); }}>
+          ➕ Add Member
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom:20, border:`2px solid ${COLORS.secondary}` }}>
+          <div className="card-title">{editIdx !== null ? "✏️ Edit Member" : "➕ New Member"}</div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>പേര് *</label>
+              <input className="form-control" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Name" />
+            </div>
+            <div className="form-group">
+              <label>ഫോൺ</label>
+              <input className="form-control" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="Phone" />
+            </div>
+            <div className="form-group">
+              <label>ചുമതല *</label>
+              <select className="form-control" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+                <option value="">-- Select Role --</option>
+                {SAMITHI_ROLES.map(r=><option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>മേൽവിലാസം</label>
+              <input className="form-control" value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="Address" />
+            </div>
+          </div>
+          <div className="btn-group" style={{ marginTop:12 }}>
+            <button className="btn btn-primary" onClick={save}>💾 Save</button>
+            <button className="btn btn-outline" onClick={()=>{ setShowForm(false); setEditIdx(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {samithi.length === 0 ? (
+        <div className="alert alert-warning">സമിതി അംഗങ്ങളെ ചേർക്കുക.</div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>പേര്</th><th>ചുമതല</th><th>ഫോൺ</th><th>മേൽവിലാസം</th><th>Actions</th></tr></thead>
+            <tbody>
+              {samithi.map((m,i)=>(
+                <tr key={m.id||i} style={{ background:i%2===0?"#fff":COLORS.bg }}>
+                  <td style={{ color:COLORS.primary, fontWeight:700 }}>{i+1}</td>
+                  <td style={{ fontWeight:600, color:COLORS.navBg }}>{m.name}</td>
+                  <td><span style={{ background: roleColor[m.role]||"#374151", color:"#fff", padding:"3px 10px", borderRadius:12, fontSize:12, fontWeight:600 }}>{m.role}</span></td>
+                  <td>{m.phone||"—"}</td>
+                  <td style={{ fontSize:12 }}>{m.address||"—"}</td>
+                  <td>
+                    <div className="btn-group">
+                      <button className="btn btn-secondary btn-sm" onClick={()=>edit(i)}>✏️</button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>del(i)}>🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SubjectsPage (Admin) ─────────────────────────────────────────────────
+function SubjectsPage({ subjects, onSave }) {
+  const [list, setList] = useState(subjects || DEFAULT_SUBJECTS);
+  const [newSub, setNewSub] = useState("");
+
+  const add = () => {
+    const s = newSub.trim();
+    if (!s) return;
+    if (list.includes(s)) { alert("Already exists"); return; }
+    const updated = [...list, s];
+    setList(updated); onSave(updated); setNewSub("");
+  };
+
+  const del = (s) => {
+    if (!window.confirm(`Delete "${s}"?`)) return;
+    const updated = list.filter(x=>x!==s);
+    setList(updated); onSave(updated);
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title">📚 Subjects Management</div>
+      <div style={{ display:"flex", gap:10, marginBottom:20 }}>
+        <input className="form-control" style={{ maxWidth:300 }} value={newSub}
+          onChange={e=>setNewSub(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&add()}
+          placeholder="New subject name" />
+        <button className="btn btn-primary" onClick={add}>➕ Add</button>
+      </div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+        {list.map(s=>(
+          <div key={s} style={{ display:"flex", alignItems:"center", gap:6, background:COLORS.bg, border:`1px solid ${COLORS.border}`, borderRadius:20, padding:"6px 14px" }}>
+            <span style={{ fontSize:14, fontWeight:500 }}>{s}</span>
+            <button onClick={()=>del(s)} style={{ background:"none", border:"none", color:COLORS.danger, cursor:"pointer", fontSize:16, lineHeight:1 }}>✕</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Teacher Reports Page (Admin) ─────────────────────────────────────────
+function TeacherReportsPage({ schools, schoolData, subjects }) {
+  const subList = subjects && subjects.length > 0 ? subjects : DEFAULT_SUBJECTS;
+  const [selSubject, setSelSubject] = useState(subList[0] || "");
+
+  const filtered = [];
+  schools.forEach(school => {
+    const teachers = schoolData[school.id]?.teachers || [];
+    teachers.forEach(t => {
+      if ((t.subjects||[]).includes(selSubject)) {
+        filtered.push({ ...t, schoolName: school.name, schoolCode: school.code });
+      }
+    });
+  });
+
+  const printPDF = () => {
+    const win = window.open("","_blank");
+    if (!win) { alert("Pop-up blocked!"); return; }
+    const rows = filtered.map((t,i)=>`
+      <tr class="${i%2===0?"":"alt"}">
+        <td>${i+1}</td>
+        <td><b>${t.name}</b></td>
+        <td>${t.phone||"—"}</td>
+        <td>${t.joinYear||"—"}</td>
+        <td>${t.prevExp?t.prevExp+" yr":"—"}</td>
+        <td>${t.trained?"✅ Trained":"❌ Untrained"}</td>
+        <td>${(t.subjects||[]).join(", ")||"—"}</td>
+        <td>${t.schoolName}</td>
+      </tr>`).join("");
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+      <title>${selSubject} Teachers – BVN Kollam</title>
+      <style>body{font-family:sans-serif;padding:20px;font-size:12px}
+      h1{font-size:16px;color:#1C2A40;text-align:center}
+      p{text-align:center;color:#666;margin-bottom:16px}
+      table{border-collapse:collapse;width:100%}
+      th{background:#1C2A40;color:#fff;padding:7px 10px;font-size:11px}
+      td{border:1px solid #ddd;padding:6px 10px}
+      tr.alt td{background:#f9f9f9}
+      tfoot td{background:#1A6B3A;color:#fff;font-weight:700;padding:7px 10px}
+      @media print{@page{size:A4;margin:12mm}}</style></head>
+      <body>
+      <h1>BHARATHEEYA VIDYA NIKETAN – KOLLAM DISTRICT</h1>
+      <p>${selSubject} അധ്യാപകർ · ${new Date().toLocaleDateString("en-IN")} · ${filtered.length} Teachers</p>
+      <table>
+        <thead><tr><th>#</th><th>പേര്</th><th>ഫോൺ</th><th>Join Year</th><th>Exp</th><th>Training</th><th>Subjects</th><th>School</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="8"><b>ആകെ: ${filtered.length} അധ്യാപകർ</b></td></tr></tfoot>
+      </table>
+      </body></html>`);
+    win.document.close();
+    setTimeout(()=>win.print(),500);
+  };
+
+  return (
+    <div>
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-title">👨‍🏫 Subject-wise Teacher Report</div>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
+          {subList.map(s=>(
+            <button key={s} onClick={()=>setSelSubject(s)}
+              style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:600,
+                background: selSubject===s ? COLORS.primary : COLORS.bg,
+                color: selSubject===s ? "#fff" : COLORS.text }}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontWeight:700, color:COLORS.navBg }}>
+            📌 {selSubject}: <span style={{ color:COLORS.primary }}>{filtered.length} അധ്യാപകർ</span>
+          </span>
+          <button className="btn btn-primary btn-sm" onClick={printPDF}>🖨️ PDF Export</button>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="alert alert-warning">ഈ subject-ൽ അധ്യാപകർ ഇല്ല.</div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>പേര്</th><th>ഫോൺ</th><th>Join Year</th><th>Exp</th><th>Training</th><th>Other Subjects</th><th>School</th></tr></thead>
+            <tbody>
+              {filtered.map((t,i)=>(
+                <tr key={i} style={{ background:i%2===0?"#fff":COLORS.bg }}>
+                  <td style={{ color:COLORS.primary, fontWeight:700 }}>{i+1}</td>
+                  <td style={{ fontWeight:600, color:COLORS.navBg }}>{t.name}</td>
+                  <td>{t.phone||"—"}</td>
+                  <td>{t.joinYear||"—"}</td>
+                  <td>{t.prevExp?`${t.prevExp} yr`:"—"}</td>
+                  <td>{t.trained?<span className="badge badge-success">✅ Trained</span>:<span className="badge badge-draft">❌ Untrained</span>}</td>
+                  <td style={{ fontSize:12 }}>{(t.subjects||[]).filter(s=>s!==selSubject).join(", ")||"—"}</td>
+                  <td style={{ fontSize:12, fontWeight:600 }}>{t.schoolName}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Users Page ───────────────────────────────────────────────────────────
+function UsersPage({ schools, users, onUpdatePassword }) {
+  const [editingId, setEditingId] = useState(null);
+  const [newPass, setNewPass] = useState("");
+
+  const startEdit = (u) => { setEditingId(u.id); setNewPass(u.password); };
+  const cancelEdit = () => { setEditingId(null); setNewPass(""); };
+  const save = (u) => {
+    if (!newPass.trim() || newPass.length < 4) { alert("Password കുറഞ്ഞത് 4 characters വേണം"); return; }
+    onUpdatePassword(u.id, newPass.trim());
+    setEditingId(null); setNewPass("");
+  };
+
+  return (
+    <div className="card">
+      <div className="card-title">👥 System Users</div>
+      <div className="alert alert-info">🔐 Admin-ന് ഏതൊരു user-ന്റെയും password മാറ്റാം. ✏️ click ചെയ്യുക.</div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Username</th><th>Name / School</th><th>Role</th><th>Password</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {users.map((u, i) => {
+              const schoolName = u.role === "admin" ? "All Schools" : schools.find(s => s.id === u.schoolId)?.name || "—";
+              const isEditing = editingId === u.id;
+              return (
+                <tr key={u.id}>
+                  <td style={{ color: "#D4500A", fontWeight: 700 }}>{i + 1}</td>
+                  <td>
+                    <code style={{ background: "#FFF3E0", color: "#B45309", padding: "3px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700 }}>
+                      {u.username}
+                    </code>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "#D4500A" }}>{u.name === u.username ? schoolName : u.name}</div>
+                    {u.role === "school" && (
+                      <div style={{ fontSize: 11, color: "#1A6B3A", marginTop: 2, fontWeight: 500 }}>{schoolName}</div>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`badge ${u.role === "admin" ? "badge-locked" : "badge-submitted"}`}
+                      style={{ fontWeight: 700, fontSize: 12 }}>
+                      {u.role === "admin" ? "🔑 Admin" : "🏫 School"}
+                    </span>
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <input className="form-control" style={{ fontSize:13, padding:"4px 8px", minWidth:120 }}
+                        value={newPass} onChange={e=>setNewPass(e.target.value)}
+                        onKeyDown={e=>e.key==="Enter"&&save(u)} autoFocus />
+                    ) : (
+                      <code style={{ background: "#F0FDF4", color: "#166534", padding: "3px 8px", borderRadius: 4, fontSize: 12 }}>
+                        {u.password}
+                      </code>
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <div className="btn-group">
+                        <button className="btn btn-secondary btn-sm" onClick={()=>save(u)}>💾</button>
+                        <button className="btn btn-outline btn-sm" onClick={cancelEdit}>✕</button>
+                      </div>
+                    ) : (
+                      <button className="btn btn-outline btn-sm" onClick={()=>startEdit(u)}>✏️ Edit</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared Components ────────────────────────────────────────────────────
+function StatCard({ icon, color, label, value, sub }) {
+  return (
+    <div className="stat-card">
+      <div className={`stat-icon ${color}`}>{icon}</div>
+      <div className="stat-body">
+        <div className="label">{label}</div>
+        <div className="value">{value}</div>
+        {sub && <div className="sub">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const map = { draft: "badge-draft", submitted: "badge-submitted", approved: "badge-approved", locked: "badge-locked" };
+  const labels = { draft: "✏️ Draft", submitted: "📤 Submitted", approved: "✅ Approved", locked: "🔒 Locked" };
+  return <span className={`badge ${map[status] || "badge-draft"}`}>{labels[status] || status}</span>;
+}
+
+function exportCSV(schools, schoolData) {
+  const rows = [["#","School","Code","Level","Local Body Type","Local Body","Taluk","Boys","Girls","Total","Teachers","SC","ST","OBC","OEC","General","Status"]];
+  schools.forEach((s, i) => {
+    const d = schoolData[s.id] || makeSchoolData(s.id);
+    const st = sumStrength(d.strength);
+    const t = Number(d.staff.maleteachers || 0) + Number(d.staff.femaleteachers || 0);
+    rows.push([i+1, s.name, s.code, s.level, s.localBodyType||"Grama Panchayat", s.localBody||"", s.taluk, st.boys, st.girls, st.total, t, d.community.SC||0, d.community.ST||0, d.community.OBC||0, d.community.OEC||0, d.community.General||0, d.status]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", "BVN_Kollam_Report_2026-27.csv");
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportFullReport(schools, schoolData) {
+  const sep = (title) => [[], [`=== ${title} ===`], []];
+  let rows = [];
+
+  // Section 1: School-wise
+  rows.push(...sep("SCHOOL-WISE REPORT"));
+  rows.push(["#","School","Code","Level","Local Body","Taluk","Boys","Girls","Total","Teachers","SC","ST","OBC","OEC","General","Status"]);
+  schools.forEach((s, i) => {
+    const d = schoolData[s.id] || makeSchoolData(s.id);
+    const st = sumStrength(d.strength);
+    const t = Number(d.staff.maleteachers||0) + Number(d.staff.femaleteachers||0);
+    rows.push([i+1, s.name, s.code, s.level, `${s.localBodyType||"GP"} - ${s.localBody||""}`, s.taluk, st.boys, st.girls, st.total, t, d.community.SC||0, d.community.ST||0, d.community.OBC||0, d.community.OEC||0, d.community.General||0, d.status]);
+  });
+
+  // Section 2: Taluk-wise presence
+  rows.push(...sep("TALUK-WISE PRESENCE"));
+  rows.push(["Taluk","Schools","Panchayat Active","Panchayat Inactive","Municipality Active","Municipality Inactive","Corporation Active"]);
+  KOLLAM_TALUKS.forEach(taluk => {
+    const ts = schools.filter(s => s.taluk === taluk);
+    const aP = new Set(ts.filter(s=>(s.localBodyType||"Grama Panchayat")==="Grama Panchayat").map(s=>s.localBody)).size;
+    const aM = new Set(ts.filter(s=>s.localBodyType==="Municipality").map(s=>s.localBody)).size;
+    const aC = new Set(ts.filter(s=>s.localBodyType==="Corporation").map(s=>s.localBody)).size;
+    rows.push([taluk, ts.length, aP, KOLLAM_LOCAL_BODIES["Grama Panchayat"].length - aP, aM, KOLLAM_LOCAL_BODIES["Municipality"].length - aM, aC]);
+  });
+
+  // Section 3: Local body presence
+  rows.push(...sep("LOCAL BODY PRESENCE SUMMARY"));
+  rows.push(["Local Body Type","Total","Active","Inactive"]);
+  const lbTypes = [["Grama Panchayat","🌾"],["Municipality","🏘️"],["Corporation","🏙️"]];
+  lbTypes.forEach(([type]) => {
+    const all = KOLLAM_LOCAL_BODIES[type].length;
+    const active = new Set(schools.filter(s=>(s.localBodyType||"Grama Panchayat")===type).map(s=>s.localBody)).size;
+    rows.push([type, all, active, all - active]);
+  });
+
+  // Section 4: District summary
+  rows.push(...sep("DISTRICT SUMMARY"));
+  const allD = schools.map(s => schoolData[s.id] || makeSchoolData(s.id));
+  rows.push(["Total Schools", schools.length]);
+  rows.push(["Total Boys", allD.reduce((a,d)=>a+sumStrength(d.strength).boys,0)]);
+  rows.push(["Total Girls", allD.reduce((a,d)=>a+sumStrength(d.strength).girls,0)]);
+  rows.push(["Total Students", allD.reduce((a,d)=>a+sumStrength(d.strength).total,0)]);
+  rows.push(["Total Teachers", allD.reduce((a,d)=>a+Number(d.staff.maleteachers||0)+Number(d.staff.femaleteachers||0),0)]);
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", "BVN_Kollam_FullReport_2026-27.csv");
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+    function AppWithFirebase() {
+      const { schools, setSchools, schoolData, setSchoolData, subjects, setSubjects, users, setUsers, ready } =
+        useFirebase(INITIAL_SCHOOLS, INITIAL_SCHOOL_DATA, USERS);
+      const [user, setUser]                         = useState(null);
+      const [page, setPage]                         = useState("dashboard");
+      const [sidebarOpen, setSidebarOpen]           = useState(true);
+      const [selectedSchoolId, setSelectedSchoolId] = useState(null);
+      const [dataTab, setDataTab]                   = useState("strength");
+      const [saveMsg, setSaveMsg]                   = useState("");
+
+      const showSaved = (msg="✅ ഡേറ്റ സേവ് ആയി!") => { setSaveMsg(msg); setTimeout(()=>setSaveMsg(""),2500); };
+      const login = (u,p) => { const f=users.find(x=>x.username===u&&x.password===p); if(f){setUser(f);setPage("dashboard");return true;} return false; };
+      const updateUserPassword = async (userId, newPassword) => {
+        const nl = users.map(x => x.id===userId ? {...x, password:newPassword} : x);
+        setUsers(nl); await fbSaveUsers(nl); showSaved("🔐 Password updated!");
+      };
+      const logout = () => { setUser(null); setPage("dashboard"); };
+      const addSchool = async (school) => {
+        const id=Date.now(); const ns={...school,id}; const nl=[...schools,ns];
+        setSchools(nl); setSchoolData(prev=>({...prev,[id]:makeSchoolData(id)}));
+        await fbSaveSchools(nl); await fbSaveSchoolData(id,makeSchoolData(id));
+        showSaved("✅ സ്കൂൾ add ആയി!");
+      };
+      const deleteSchool = async (id) => {
+        if(!window.confirm("ഈ സ്കൂൾ നീക്കം ചെയ്യണോ?")) return;
+        const nl=schools.filter(s=>s.id!==id);
+        setSchools(nl); setSchoolData(prev=>{const n={...prev};delete n[id];return n;});
+        await fbSaveSchools(nl); await fbDeleteSchoolData(id);
+        showSaved("🗑️ സ്കൂൾ നീക്കം ചെയ്തു!");
+      };
+      const updateSchoolProfile = async (id,updates) => {
+        const nl=schools.map(s=>s.id===id?{...s,...updates}:s);
+        setSchools(nl); await fbSaveSchools(nl); showSaved();
+      };
+      const updateData = async (schoolId,field,value) => {
+        const updated={...(schoolData[schoolId]||makeSchoolData(schoolId)),[field]:value};
+        setSchoolData(prev=>({...prev,[schoolId]:updated}));
+        await fbSaveSchoolData(schoolId,updated); showSaved();
+      };
+      const submitData = async (schoolId) => {
+        const updated={...(schoolData[schoolId]||makeSchoolData(schoolId)),status:"submitted",submittedAt:new Date().toISOString()};
+        setSchoolData(prev=>({...prev,[schoolId]:updated}));
+        await fbSaveSchoolData(schoolId,updated); showSaved("✅ Data submit ആയി!");
+      };
+      const approveData = async (schoolId) => {
+        const updated={...(schoolData[schoolId]||makeSchoolData(schoolId)),status:"approved"};
+        setSchoolData(prev=>({...prev,[schoolId]:updated}));
+        await fbSaveSchoolData(schoolId,updated); showSaved("✅ Approved!");
+      };
+      const lockData = async (schoolId) => {
+        const updated={...(schoolData[schoolId]||makeSchoolData(schoolId)),status:"locked",lockedAt:new Date().toISOString()};
+        setSchoolData(prev=>({...prev,[schoolId]:updated}));
+        await fbSaveSchoolData(schoolId,updated); showSaved("🔒 Locked!");
+      };
+      const unlockData = async (schoolId) => {
+        const updated={...(schoolData[schoolId]||makeSchoolData(schoolId)),status:"approved",lockedAt:null};
+        setSchoolData(prev=>({...prev,[schoolId]:updated}));
+        await fbSaveSchoolData(schoolId,updated); showSaved("🔓 Unlocked!");
+      };
+      const saveSubjects = async (list) => {
+        setSubjects(list); await fbSaveSubjects(list); showSaved("📚 Subjects updated!");
+      };
+
+      if (!ready) return null;
+      if (!user) return <LoginScreen onLogin={login} />;
+
+      const mySchoolId = user.role==="school" ? user.schoolId : (selectedSchoolId||schools[0]?.id);
+      const mySchool   = schools.find(s=>s.id===mySchoolId);
+      const myData     = schoolData[mySchoolId]||makeSchoolData(mySchoolId);
+      const isLocked   = myData.status==="locked";
+
+      return (
+        <>
+          <style dangerouslySetInnerHTML={{ __html: css }} />
+          {saveMsg && (
+            <div style={{position:"fixed",bottom:24,right:24,background:"#166534",color:"#fff",
+              padding:"12px 20px",borderRadius:10,fontWeight:600,fontSize:14,
+              zIndex:9999,boxShadow:"0 4px 16px rgba(0,0,0,0.25)"}}>
+              {saveMsg}
+            </div>
+          )}
+          <div className="app-shell">
+            <Sidebar user={user} page={page} setPage={setPage}
+              sidebarOpen={sidebarOpen} onLogout={logout}
+              onToggle={()=>setSidebarOpen(o=>!o)} />
+            <div className={`main-content ${sidebarOpen?"":"full"}`}>
+              <div className="district-banner">
+                <span className="banner-om">ॐ</span>
+                <div className="banner-text">
+                  <h2>Bharatheeya Vidya Niketan – Kollam District</h2>
+                  <p>School Information Management System</p>
+                </div>
+                <span className="banner-year">2026–27</span>
+              </div>
+              <Topbar title={pageTitle(page)} onToggle={()=>setSidebarOpen(o=>!o)} user={user} />
+              <div className="page">
+                {page==="dashboard" && (user.role==="admin"
+                  ? <AdminDashboard schools={schools} schoolData={schoolData} />
+                  : <SchoolDashboard school={mySchool} data={myData} />
+                )}
+                {page==="schools" && user.role==="admin" && (
+                  <SchoolsPage schools={schools} schoolData={schoolData}
+                    onSelect={(id)=>{setSelectedSchoolId(id);setPage("data-entry");}}
+                    onAdd={addSchool} onDelete={deleteSchool}
+                    onApprove={approveData} onLock={lockData} onUnlock={unlockData} />
+                )}
+                {page==="schools" && user.role==="school" && <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>}
+                {page==="users"   && user.role==="school" && <div className="alert alert-danger">🚫 ഈ പേജ് കാണാൻ അനുമതിയില്ല.</div>}
+                {page==="profile" && <ProfilePage school={mySchool} onSave={(u)=>updateSchoolProfile(mySchoolId,u)} readOnly={user.role==="school"?isLocked:false} />}
+                {page==="data-entry" && (
+                  <DataEntryPage school={mySchool} data={myData}
+                    onUpdate={(f,v)=>updateData(mySchoolId,f,v)}
+                    onSubmit={()=>submitData(mySchoolId)}
+                    locked={isLocked} tab={dataTab} setTab={setDataTab} />
+                )}
+                {page==="reports" && (
+                  <ReportsPage
+                    schools={user.role==="school"?schools.filter(s=>s.id===user.schoolId):schools}
+                    schoolData={schoolData}
+                    selectedId={user.role==="school"?user.schoolId:null}
+                    isSchoolUser={user.role==="school"}
+                    mySchool={mySchool} myData={myData} />
+                )}
+                {page==="users"    && user.role==="admin" && <UsersPage schools={schools} users={users} onUpdatePassword={updateUserPassword} />}
+                {page==="teachers" && user.role==="school" && <TeachersPage data={myData} subjects={subjects} onUpdate={(f,v)=>updateData(mySchoolId,f,v)} />}
+                {page==="samithi"  && user.role==="school" && <SamithiPage  data={myData} onUpdate={(f,v)=>updateData(mySchoolId,f,v)} />}
+                {page==="subjects" && user.role==="admin"  && <SubjectsPage subjects={subjects} onSave={saveSubjects} />}
+                {page==="teacher-reports" && user.role==="admin" && <TeacherReportsPage schools={schools} schoolData={schoolData} subjects={subjects} />}
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<AppWithFirebase />);
+</script>
+</body>
+</html>
